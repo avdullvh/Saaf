@@ -1,79 +1,104 @@
 # SAAF SAAF - Palm Tree Variety Classification & Community
 
-SAAF SAAF is a comprehensive mobile application designed to help farmers and palm enthusiasts classify palm tree varieties using AI/ML and share their results with a local community.
+SAAF SAAF (سعف) is a full-stack mobile application developed for the agricultural sector, specifically targeting palm tree farmers. It leverages Artificial Intelligence to identify palm tree varieties from images and provides a community platform for farmers to share insights and classification results.
 
-## 🚀 Features
-- **AI Classification**: Instantly identify palm varieties (Khalas, Shishi, etc.) from photos.
-- **Community Feed**: Share your classification results, like posts, and comment on others.
-- **User Profiles**: Manage your own profile, upload an avatar, and track your contributions.
-- **Multilingual Support**: Fully localized in both Arabic and English.
-- **Cross-Platform**: Built with Flutter for a smooth experience across devices.
+## 🏗 Project Architecture
 
-## 🛠 Tech Stack
-- **Frontend**: Flutter (Provider for state management, Material 3 Design)
-- **Backend**: Django 5 + Django REST Framework (DRF)
-- **Database**: PostgreSQL (for persistent profiles and posts)
-- **AI/ML**: PyTorch (Torchvision + TIMM) integrated directly into the Django backend.
-- **Authentication**: JWT (JSON Web Tokens) for secure sessions.
+The system follows a modern client-server architecture:
+
+```mermaid
+graph TD
+    A[Flutter Mobile App] <--> B[REST API - Django]
+    B <--> C[PostgreSQL Database]
+    B <--> D[AI/ML Engine - PyTorch]
+    A <--> E[Media Storage]
+```
+
+### 1. Frontend: Flutter Mobile Application
+A high-performance, cross-platform UI built to handle image processing and community interactions.
+- **State Management**: `Provider` pattern for clean data flow.
+- **Localization**: Full support for Arabic and English using `.arb` files.
+- **Image Handling**: Custom logic for 1:1 aspect ratio cropping and cross-platform (Web/Mobile/macOS) image uploading.
+
+### 2. Backend: Django REST Framework
+A robust backend managing users, posts, and ML inference.
+- **Authentication**: Custom JWT implementation for secure, stateless sessions.
+- **ML Integration**: The AI model is loaded once on server startup (in `classify/apps.py`) and cached in memory for zero-latency inference.
+- **Storage**: Media files (images) are managed through Django's `FileSystemStorage`.
 
 ---
 
-## 💻 Getting Started
+## 📂 Directory Structure
 
-### 1. Prerequisites
-- [Flutter SDK](https://docs.flutter.dev/get-started/install)
-- [Python 3.10+](https://www.python.org/downloads/)
-- [PostgreSQL](https://www.postgresql.org/download/)
+### Mobile App (`/lib`)
+- `core/`: Constants, themes, and shared utilities (token storage).
+- `models/`: Plain Dart objects mapping API data (User, Post, Result).
+- `providers/`: Business logic and state management (Auth, Feed, Classification).
+- `screens/`: UI components organized by feature (Auth, Feed, Result, Profile).
+- `services/`: Low-level HTTP communication classes.
+- `l10n/`: Translation files for Arabic and English.
 
-### 2. Backend Setup (Django)
-```bash
-cd saaf_backend
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Setup Environment (.env)
-# Create a .env file with your DB_URL and SECRET_KEY
-
-# Run migrations
-python manage.py migrate
-
-# Start the server
-python manage.py runserver
-```
-
-### 3. Frontend Setup (Flutter)
-```bash
-# From the root directory
-flutter pub get
-
-# (Optional) Regenerate localization if needed
-flutter gen-l10n
-
-# Run the app
-flutter run
-```
+### Backend (`/saaf_backend`)
+- `accounts/`: Custom user model, profile management, and JWT authentication logic.
+- `feed/`: Social features — posts, likes, and nested comments.
+- `classify/`: The AI engine. Ported from a standalone FastAPI implementation into Django views.
+- `media/`: Storage directory for uploaded images.
+- `saaf/`: Core project settings and URL routing.
 
 ---
 
-## 📤 Git & GitHub Workflow
+## ⚙️ Technical Deep Dive
 
-### How to push changes
-Whenever you make changes to the code, run these commands to update your GitHub repository:
+### AI Classification Logic
+The model uses a pre-trained `TIMM` architecture. To prevent misleading results, the API returns a classification "Unknown" if the model's confidence is below 95%. When a result is "Unknown", the option to "Share to Community" is automatically disabled in the app.
 
+### Data Synchronization
+The app uses a "Reload on Tab" strategy. To ensure that likes and comments made in the community feed are visible in the user's profile, the profile posts are re-fetched whenever the user navigates to the Profile tab.
+
+---
+
+## 🛠 Setup and Installation
+
+### Backend (Django)
+1. **Database**: Ensure PostgreSQL is running.
+   ```bash
+   createdb saaf_db
+   ```
+2. **Environment**: Create a `.env` in `saaf_backend/`:
+   ```env
+   SECRET_KEY=your_secret
+   DATABASE_URL=postgres://user:pass@localhost:5432/saaf_db
+   ```
+3. **Run**:
+   ```bash
+   pip install -r requirements.txt
+   python manage.py migrate
+   python manage.py runserver
+   ```
+
+### Frontend (Flutter)
+1. **Install Gems/Dependencies**:
+   ```bash
+   flutter pub get
+   ```
+2. **Run**:
+   ```bash
+   flutter run
+   ```
+
+---
+
+## 📤 Git Workflow
+
+To keep the project clean, specific rules are set in `.gitignore`:
+- **Ignored**: `.env` files, `db.sqlite3`, `media/` uploads, and `__pycache__`.
+
+### Pushing Changes
 ```bash
-# 1. Stage all changes
 git add .
-
-# 2. Commit with a meaningful message
-git commit -m "Describe your changes here"
-
-# 3. Push to GitHub
-git push
+git commit -m "feat: your feature description"
+git push origin main
 ```
 
-### GitHub Repository
-Your code is hosted at: **[github.com/avdullvh/saaf-saaf](https://github.com/avdullvh/saaf-saaf)**
-
 ---
-Developed as a graduation project at **KFU**.
+**Main Repository**: [github.com/avdullvh/saaf-saaf](https://github.com/avdullvh/saaf-saaf)
