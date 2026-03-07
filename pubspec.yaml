@@ -1,0 +1,48 @@
+name: palm_classifier
+description: AI-powered palm tree classification and farmer networking app.
+publish_to: "none"
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.0.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:        # Arabic + English i18n
+    sdk: flutter
+
+  # State management
+  provider: ^6.1.1
+
+  # Networking
+  http: ^1.2.1                  # API calls + multipart image upload
+  shared_preferences: ^2.2.2    # Persist JWT tokens locally
+
+  # Image handling
+  image_picker: ^1.1.2          # Camera / gallery picker
+
+  # UI helpers
+  flutter_svg: ^2.0.10+1        # SVG icons / illustrations
+  cached_network_image: ^3.3.1  # Efficient remote image loading
+  percent_indicator: ^4.2.3     # Confidence score progress bar on result screen
+
+  # Utilities
+  intl: ^0.20.2                 # Date formatting + i18n support
+  path: ^1.9.0                  # Cross-platform file path utilities
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true
+
+  # Localization files
+  assets:
+    - assets/images/
+    - assets/icons/
+
+  # Generated localization files location
+  generate: true
