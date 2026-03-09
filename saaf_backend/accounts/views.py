@@ -6,7 +6,7 @@ from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
-from .models import User
+from .models import Follow, User
 from .serializers import RegisterSerializer, LoginSerializer, UserSerializer, get_tokens
 
 
@@ -61,8 +61,6 @@ def profile(request, user_id):
     if request.user.pk != user.pk:
         return Response({'detail': 'Forbidden.'}, status=status.HTTP_403_FORBIDDEN)
 
-    # Apply changes directly to the model instance then save once.
-    # Bypasses the serializer write path to avoid ImageField being dropped.
     if 'full_name' in request.data:
         user.full_name = request.data['full_name'].strip()
     if 'bio' in request.data:
@@ -81,3 +79,56 @@ def profile_posts(request, user_id):
     from feed.serializers import PostSerializer
     posts = Post.objects.filter(author_id=user_id).order_by('-created_at')
     return Response(PostSerializer(posts, many=True, context={'request': request}).data)
+
+
+# ── Follow / Unfollow ──────────────────────────────────────────────────────────
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def follow_toggle(request, user_id):
+    """POST → follow if not already following, unfollow if following."""
+    if request.user.pk == user_id:
+        return Response({'detail': 'Cannot follow yourself.'}, status=status.HTTP_400_BAD_REQUEST)
+    try:
+        target = User.objects.get(pk=user_id)
+    except User.DoesNotExist:
+        return Response({'detail': 'Not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+    follow_qs = Follow.objects.filter(follower=request.user, following=target)
+    if follow_qs.exists():
+        follow_qs.delete()
+        following = False
+    else:
+        Follow.objects.create(follower=request.user, following=target)
+        following = True
+
+    return Response({
+        'is_following':    following,
+        'followers_count': target.followers_count,
+    })
+
+
+# ── Followers / Following lists ────────────────────────────────────────────────
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def followers_list(request, user_id):
+    """Returns the list of users that follow <user_id>."""
+    try:
+        target = User.objects.get(pk=user_id)
+    except User.DoesNotExist:
+        return Response({'detail': 'Not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+    users = User.objects.filter(following__following=target)
+    return Response(UserSerializer(users, many=True, context={'request': request}).data)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def following_list(request, user_id):
+    """Returns the list of users that <user_id> follows."""
+    try:
+        target = User.objects.get(pk=user_id)
+    except User.DoesNotExist:
+        return Response({'detail': 'Not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+    users = User.objects.filter(followers__follower=target)
+    return Response(UserSerializer(users, many=True, context={'request': request}).data)

@@ -36,16 +36,29 @@ class _ProfileBodyState extends State<ProfileBody> {
   Widget build(BuildContext context) {
     final auth    = context.watch<AuthProvider>();
     final profile = context.watch<ProfileProvider>();
+    final user    = profile.ownProfile ?? auth.user;
+
     return _ProfileView(
-      user:         profile.ownProfile ?? auth.user,
+      user:         user,
       posts:        profile.posts,
       isOwnProfile: true,
       isLoading:    profile.isLoading,
+      // Own profile never has a follow button
+      isFollowing:       false,
+      onFollowToggle:    null,
+      onLoadFollowers:   () => profile.loadFollowers(user?.id ?? 0),
+      onLoadFollowing:   () => profile.loadFollowing(user?.id ?? 0),
+      followersUsers:    profile.followers,
+      followingUsers:    profile.following,
+      followersLoading:  profile.followersLoading,
+      followingLoading:  profile.followingLoading,
     );
   }
 }
 
-// ── Full-page profile for other users ───────────────────────────────────────
+// ── Full-page profile for other users ────────────────────────────────────────
+// Each instance gets its OWN ProfileProvider so it never touches
+// the global one used by ProfileBody.
 class ProfileScreen extends StatefulWidget {
   final int userId;
   const ProfileScreen({super.key, required this.userId});
@@ -55,49 +68,96 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
+  late final ProfileProvider _localProvider;
+
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<ProfileProvider>().loadProfile(widget.userId);
-    });
+    _localProvider = ProfileProvider();
+    // Kick off load immediately — no postFrameCallback needed since the
+    // provider is created here before build, so it can be read right away.
+    Future.microtask(() => _localProvider.loadProfile(widget.userId));
+  }
+
+  @override
+  void dispose() {
+    _localProvider.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final l10n    = AppLocalizations.of(context)!;
-    final auth    = context.watch<AuthProvider>();
-    final profile = context.watch<ProfileProvider>();
-    final isOwn   = auth.user?.id == widget.userId;
+    final l10n = AppLocalizations.of(context)!;
+    final auth = context.watch<AuthProvider>();
 
-    return Scaffold(
-      appBar: AppBar(title: Text(l10n.profileTitle)),
-      body: profile.isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : profile.profile == null
-              ? Center(child: Text(l10n.profileNotFound))
-              : _ProfileView(
-                  user:         profile.profile,
-                  posts:        profile.posts,
-                  isOwnProfile: isOwn,
-                  isLoading:    false,
-                ),
+    return ChangeNotifierProvider<ProfileProvider>.value(
+      value: _localProvider,
+      child: Consumer<ProfileProvider>(
+        builder: (ctx, profile, _) {
+          final isOwn = auth.user?.id == widget.userId;
+          final isEffectivelyLoading =
+              profile.status == ProfileStatus.idle ||
+              profile.status == ProfileStatus.loading;
+
+          return Scaffold(
+            appBar: AppBar(title: Text(l10n.profileTitle)),
+            body: isEffectivelyLoading
+                ? const Center(child: CircularProgressIndicator())
+                : profile.profile == null
+                    ? Center(child: Text(l10n.profileNotFound))
+                    : _ProfileView(
+                        user:         profile.profile!,
+                        posts:        profile.posts,
+                        isOwnProfile: isOwn,
+                        isLoading:    false,
+                        isFollowing:       profile.profile!.isFollowing,
+                        onFollowToggle:    isOwn ? null : () => _localProvider.toggleFollow(),
+                        onLoadFollowers:   () => _localProvider.loadFollowers(widget.userId),
+                        onLoadFollowing:   () => _localProvider.loadFollowing(widget.userId),
+                        followersUsers:    profile.followers,
+                        followingUsers:    profile.following,
+                        followersLoading:  profile.followersLoading,
+                        followingLoading:  profile.followingLoading,
+                      ),
+          );
+        },
+      ),
     );
   }
 }
 
 // ── Shared profile UI ─────────────────────────────────────────────────────────
+// All dynamic state is passed as plain parameters — no provider look-ups
+// inside this subtree, so it works regardless of which provider is in scope.
 class _ProfileView extends StatelessWidget {
   final UserModel? user;
   final List<PostModel> posts;
   final bool isOwnProfile;
   final bool isLoading;
 
+  // Follow-related params (null-safe: unused for own profile)
+  final bool           isFollowing;
+  final VoidCallback?  onFollowToggle;
+  final VoidCallback   onLoadFollowers;
+  final VoidCallback   onLoadFollowing;
+  final List<UserModel> followersUsers;
+  final List<UserModel> followingUsers;
+  final bool            followersLoading;
+  final bool            followingLoading;
+
   const _ProfileView({
     required this.user,
     required this.posts,
     required this.isOwnProfile,
     required this.isLoading,
+    required this.isFollowing,
+    required this.onFollowToggle,
+    required this.onLoadFollowers,
+    required this.onLoadFollowing,
+    required this.followersUsers,
+    required this.followingUsers,
+    required this.followersLoading,
+    required this.followingLoading,
   });
 
   @override
@@ -115,7 +175,7 @@ class _ProfileView extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
             child: Column(
               children: [
-                // Avatar
+                // ── Avatar ──────────────────────────────────────────────────
                 Stack(
                   alignment: Alignment.bottomRight,
                   children: [
@@ -127,9 +187,7 @@ class _ProfileView extends StatelessWidget {
                           : null,
                       child: (user!.avatarUrl == null || user!.avatarUrl!.isEmpty)
                           ? Text(
-                              user!.fullName.isNotEmpty
-                                  ? user!.fullName[0].toUpperCase()
-                                  : '?',
+                              user!.fullName.isNotEmpty ? user!.fullName[0].toUpperCase() : '?',
                               style: const TextStyle(
                                 fontSize: 36,
                                 fontWeight: FontWeight.bold,
@@ -147,43 +205,70 @@ class _ProfileView extends StatelessWidget {
                             color: AppColors.accent,
                             shape: BoxShape.circle,
                           ),
-                          child: const Icon(Icons.camera_alt,
-                              size: 16, color: Colors.white),
+                          child: const Icon(Icons.camera_alt, size: 16, color: Colors.white),
                         ),
                       ),
                   ],
                 ),
                 const SizedBox(height: 12),
 
-                // Name
-                Text(
-                  user!.fullName,
-                  style: Theme.of(context)
-                      .textTheme
-                      .titleLarge
-                      ?.copyWith(fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 4),
-
-                // Post count chip
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(20),
+                // ── Name + optional Follow button ────────────────────────────
+                if (!isOwnProfile && onFollowToggle != null)
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Flexible(
+                        child: Text(
+                          user!.fullName,
+                          style: Theme.of(context)
+                              .textTheme
+                              .titleLarge
+                              ?.copyWith(fontWeight: FontWeight.bold),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      _FollowButton(
+                        isFollowing:   isFollowing,
+                        onTap:         onFollowToggle!,
+                      ),
+                    ],
+                  )
+                else
+                  Text(
+                    user!.fullName,
+                    style: Theme.of(context)
+                        .textTheme
+                        .titleLarge
+                        ?.copyWith(fontWeight: FontWeight.bold),
                   ),
-                  child: Text(
-                    '${posts.isNotEmpty ? posts.length : user!.postCount} ${l10n.posts}',
-                    style: const TextStyle(
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 13,
-                    ),
+                const SizedBox(height: 12),
+
+                // ── Stats row ────────────────────────────────────────────────
+                _StatsRow(
+                  user:            user!,
+                  posts:           posts,
+                  l10n:            l10n,
+                  onTapFollowers:  () => _showFollowList(
+                    context,
+                    title:    l10n.followers,
+                    type:     _FollowListType.followers,
+                    onLoad:   onLoadFollowers,
+                    users:    followersUsers,
+                    loading:  followersLoading,
+                  ),
+                  onTapFollowing:  () => _showFollowList(
+                    context,
+                    title:    l10n.following,
+                    type:     _FollowListType.following,
+                    onLoad:   onLoadFollowing,
+                    users:    followingUsers,
+                    loading:  followingLoading,
                   ),
                 ),
                 const SizedBox(height: 12),
 
-                // Bio
+                // ── Bio ──────────────────────────────────────────────────────
                 if (user!.bio != null && user!.bio!.isNotEmpty)
                   Text(
                     user!.bio!,
@@ -196,13 +281,12 @@ class _ProfileView extends StatelessWidget {
                     child: Text(
                       l10n.addBioHint,
                       style: TextStyle(
-                          color: AppColors.primaryLight,
-                          fontStyle: FontStyle.italic),
+                          color: AppColors.primaryLight, fontStyle: FontStyle.italic),
                     ),
                   ),
                 const SizedBox(height: 16),
 
-                // Edit Profile button (own profile only)
+                // ── Edit Profile button ──────────────────────────────────────
                 if (isOwnProfile)
                   SizedBox(
                     width: double.infinity,
@@ -214,14 +298,13 @@ class _ProfileView extends StatelessWidget {
                         foregroundColor: AppColors.primary,
                         side: const BorderSide(color: AppColors.primary),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
+                            borderRadius: BorderRadius.circular(12)),
                       ),
                     ),
                   ),
                 const SizedBox(height: 20),
 
-                // Posts section header
+                // ── Posts header ─────────────────────────────────────────────
                 Row(
                   children: [
                     const Icon(Icons.grid_view_rounded,
@@ -243,7 +326,7 @@ class _ProfileView extends StatelessWidget {
           ),
         ),
 
-        // Posts list
+        // ── Posts list ───────────────────────────────────────────────────────
         posts.isEmpty
             ? SliverFillRemaining(
                 hasScrollBody: false,
@@ -275,14 +358,281 @@ class _ProfileView extends StatelessWidget {
     final uid = context.read<AuthProvider>().user?.id;
     if (uid == null) return;
     Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => EditProfileScreen(userId: uid),
+      MaterialPageRoute(builder: (_) => EditProfileScreen(userId: uid)),
+    );
+  }
+
+  void _showFollowList(
+    BuildContext context, {
+    required String         title,
+    required _FollowListType type,
+    required VoidCallback    onLoad,
+    required List<UserModel> users,
+    required bool            loading,
+  }) {
+    // Trigger load now (before sheet opens)
+    onLoad();
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      // The sheet is a pure display widget — no provider look-ups inside.
+      // We pass users + loading state in as ValueNotifiers so the sheet
+      // can rebuild when the parent provider notifies.
+      builder: (_) => _FollowListSheet(
+        title:   title,
+        type:    type,
+        users:   users,
+        loading: loading,
       ),
     );
   }
 }
 
-// ── Individual post tile shown in the profile ────────────────────────────────
+// ── Stats row ─────────────────────────────────────────────────────────────────
+class _StatsRow extends StatelessWidget {
+  final UserModel       user;
+  final List<PostModel> posts;
+  final AppLocalizations l10n;
+  final VoidCallback    onTapFollowers;
+  final VoidCallback    onTapFollowing;
+
+  const _StatsRow({
+    required this.user,
+    required this.posts,
+    required this.l10n,
+    required this.onTapFollowers,
+    required this.onTapFollowing,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final postCount = posts.isNotEmpty ? posts.length : user.postCount;
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        _StatChip(label: l10n.posts,     count: postCount,          onTap: null),
+        _StatDivider(),
+        _StatChip(label: l10n.followers, count: user.followersCount, onTap: onTapFollowers),
+        _StatDivider(),
+        _StatChip(label: l10n.following, count: user.followingCount, onTap: onTapFollowing),
+      ],
+    );
+  }
+}
+
+class _StatChip extends StatelessWidget {
+  final String      label;
+  final int         count;
+  final VoidCallback? onTap;
+
+  const _StatChip({required this.label, required this.count, this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        child: Column(
+          children: [
+            Text(
+              '$count',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: onTap != null ? AppColors.primary : null,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                color: AppColors.textSecondary,
+                decoration: onTap != null ? TextDecoration.underline : null,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _StatDivider extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 36,
+      width: 1,
+      color: AppColors.textSecondary.withOpacity(0.3),
+    );
+  }
+}
+
+// ── Stateless Follow / Unfollow button ───────────────────────────────────────
+// Receives state as parameters — no provider look-up here.
+class _FollowButton extends StatelessWidget {
+  final bool          isFollowing;
+  final VoidCallback  onTap;
+
+  const _FollowButton({required this.isFollowing, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
+    if (isFollowing) {
+      return OutlinedButton(
+        onPressed: onTap,
+        style: OutlinedButton.styleFrom(
+          foregroundColor: AppColors.textSecondary,
+          side: BorderSide(color: AppColors.textSecondary.withOpacity(0.5)),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+          minimumSize: const Size(88, 32),
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20)),
+        ),
+        child: Text(l10n.unfollow, style: const TextStyle(fontSize: 13)),
+      );
+    } else {
+      return ElevatedButton(
+        onPressed: onTap,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.primary,
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+          minimumSize: const Size(88, 32),
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20)),
+        ),
+        child: Text(l10n.follow, style: const TextStyle(fontSize: 13)),
+      );
+    }
+  }
+}
+
+// ── Bottom-sheet: list of followers or following users ────────────────────────
+// Pure display — accepts data as constructor params, no provider access.
+enum _FollowListType { followers, following }
+
+class _FollowListSheet extends StatelessWidget {
+  final String          title;
+  final _FollowListType type;
+  final List<UserModel> users;
+  final bool            loading;
+
+  const _FollowListSheet({
+    required this.title,
+    required this.type,
+    required this.users,
+    required this.loading,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return DraggableScrollableSheet(
+      initialChildSize: 0.55,
+      minChildSize: 0.35,
+      maxChildSize: 0.9,
+      expand: false,
+      builder: (_, controller) => Column(
+        children: [
+          // Drag handle
+          Container(
+            margin: const EdgeInsets.only(top: 12, bottom: 8),
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: Colors.grey.withOpacity(0.4),
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          // Title
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+            child: Text(
+              title,
+              style: Theme.of(context)
+                  .textTheme
+                  .titleMedium
+                  ?.copyWith(fontWeight: FontWeight.bold),
+            ),
+          ),
+          const Divider(height: 1),
+          // List
+          Expanded(
+            child: loading
+                ? const Center(child: CircularProgressIndicator())
+                : users.isEmpty
+                    ? Center(
+                        child: Text('–',
+                            style: TextStyle(color: AppColors.textSecondary)),
+                      )
+                    : ListView.builder(
+                        controller: controller,
+                        itemCount: users.length,
+                        itemBuilder: (_, i) => _UserTile(user: users[i]),
+                      ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Individual user tile inside the follow list ───────────────────────────────
+class _UserTile extends StatelessWidget {
+  final UserModel user;
+  const _UserTile({required this.user});
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      leading: CircleAvatar(
+        radius: 22,
+        backgroundColor: AppColors.primaryLight,
+        backgroundImage: (user.avatarUrl != null && user.avatarUrl!.isNotEmpty)
+            ? NetworkImage(user.avatarUrl!) as ImageProvider
+            : null,
+        child: (user.avatarUrl == null || user.avatarUrl!.isEmpty)
+            ? Text(
+                user.fullName.isNotEmpty ? user.fullName[0].toUpperCase() : '?',
+                style: const TextStyle(
+                    color: Colors.white, fontWeight: FontWeight.bold),
+              )
+            : null,
+      ),
+      title: Text(user.fullName,
+          style: const TextStyle(fontWeight: FontWeight.w600)),
+      subtitle: (user.bio != null && user.bio!.isNotEmpty)
+          ? Text(
+              user.bio!,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+            )
+          : null,
+      onTap: () {
+        // Capture navigator before popping so context stays valid.
+        final nav = Navigator.of(context);
+        nav.pop();
+        nav.push(
+          MaterialPageRoute(
+            builder: (_) => ProfileScreen(userId: user.id),
+          ),
+        );
+      },
+    );
+  }
+}
+
+// ── Individual post tile in the profile ──────────────────────────────────────
 class _PostTile extends StatelessWidget {
   final PostModel post;
   const _PostTile({required this.post});
@@ -316,17 +666,16 @@ class _PostTile extends StatelessWidget {
           ),
         ),
         title: post.classification != null
-            ? Text(
-                post.classification!.predictedType,
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              )
+            ? Text(post.classification!.predictedType,
+                style: const TextStyle(fontWeight: FontWeight.bold))
             : Text(post.caption ?? 'Post'),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (post.classification != null)
               Text(post.classification!.confidencePercent,
-                  style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
+                  style: TextStyle(
+                      color: AppColors.textSecondary, fontSize: 13)),
             if (post.caption != null && post.caption!.isNotEmpty)
               Text(
                 post.caption!,

@@ -20,6 +20,9 @@ class ApiConstants {
   static String postComments(int id) => '$baseUrl/posts/$id/comments/';
 
   // Profile
-  static String profile(int id)      => '$baseUrl/profile/$id/';
-  static String profilePosts(int id) => '$baseUrl/profile/$id/posts/';
+  static String profile(int id)       => '$baseUrl/profile/$id/';
+  static String profilePosts(int id)  => '$baseUrl/profile/$id/posts/';
+  static String profileFollow(int id) => '$baseUrl/profile/$id/follow/';
+  static String profileFollowers(int id) => '$baseUrl/profile/$id/followers/';
+  static String profileFollowing(int id) => '$baseUrl/profile/$id/following/';
 }

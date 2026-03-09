@@ -18,11 +18,22 @@ class ProfileProvider extends ChangeNotifier {
   ProfileStatus   _status   = ProfileStatus.idle;
   String?         _errorKey;
 
-  UserModel?      get profile   => _profile;
-  List<PostModel> get posts     => List.unmodifiable(_posts);
-  ProfileStatus   get status    => _status;
-  String?         get errorKey  => _errorKey;
-  bool            get isLoading => _status == ProfileStatus.loading;
+  // ── Followers / Following lists ───────────────────────────────────────────
+  List<UserModel> _followers      = [];
+  List<UserModel> _following      = [];
+  bool            _followersLoading = false;
+  bool            _followingLoading = false;
+
+  UserModel?      get profile    => _profile;
+  List<PostModel> get posts      => List.unmodifiable(_posts);
+  ProfileStatus   get status     => _status;
+  String?         get errorKey   => _errorKey;
+  bool            get isLoading  => _status == ProfileStatus.loading;
+
+  List<UserModel> get followers        => List.unmodifiable(_followers);
+  List<UserModel> get following        => List.unmodifiable(_following);
+  bool            get followersLoading => _followersLoading;
+  bool            get followingLoading => _followingLoading;
 
   // ── Own profile state (kept in sync after edits) ─────────────────────────
   UserModel? _ownProfile;
@@ -83,6 +94,48 @@ class ProfileProvider extends ChangeNotifier {
     } catch (_) {
       return false;
     }
+  }
+
+  /// Toggles follow/unfollow for the currently viewed profile.
+  Future<void> toggleFollow() async {
+    if (_profile == null) return;
+    final targetId = _profile!.id;
+    try {
+      final result = await _service.toggleFollow(targetId);
+      final nowFollowing = result['is_following'] as bool;
+      final newCount     = result['followers_count'] as int;
+      _profile = _profile!.copyWith(
+        isFollowing:    nowFollowing,
+        followersCount: newCount,
+      );
+      notifyListeners();
+    } catch (_) {}
+  }
+
+  /// Loads followers list for [userId].
+  Future<void> loadFollowers(int userId) async {
+    _followersLoading = true;
+    notifyListeners();
+    try {
+      _followers = await _service.fetchFollowers(userId);
+    } catch (_) {
+      _followers = [];
+    }
+    _followersLoading = false;
+    notifyListeners();
+  }
+
+  /// Loads following list for [userId].
+  Future<void> loadFollowing(int userId) async {
+    _followingLoading = true;
+    notifyListeners();
+    try {
+      _following = await _service.fetchFollowing(userId);
+    } catch (_) {
+      _following = [];
+    }
+    _followingLoading = false;
+    notifyListeners();
   }
 
   void clearError() {

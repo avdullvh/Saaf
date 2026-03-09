@@ -131,6 +131,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get posts => 'Posts';
 
   @override
+  String get followers => 'Followers';
+
+  @override
+  String get following => 'Following';
+
+  @override
+  String get follow => 'Follow';
+
+  @override
+  String get unfollow => 'Unfollow';
+
+  @override
   String get noPostsProfile => 'No posts yet';
 
   @override

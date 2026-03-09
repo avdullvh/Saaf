@@ -42,3 +42,29 @@ class User(AbstractBaseUser, PermissionsMixin):
     @property
     def post_count(self):
         return self.posts.count()
+
+    @property
+    def followers_count(self):
+        return self.followers.count()
+
+    @property
+    def following_count(self):
+        return self.following.count()
+
+
+class Follow(models.Model):
+    """Represents a follow relationship: follower follows following."""
+    follower  = models.ForeignKey(
+        User, related_name='following', on_delete=models.CASCADE
+    )
+    following = models.ForeignKey(
+        User, related_name='followers', on_delete=models.CASCADE
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'accounts_follow'
+        unique_together = ('follower', 'following')
+
+    def __str__(self):
+        return f'{self.follower} → {self.following}'

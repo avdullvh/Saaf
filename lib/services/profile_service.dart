@@ -5,7 +5,6 @@ import 'dart:convert';
 import 'dart:io' show SocketException;
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
-import 'package:path/path.dart' as p;
 
 import '../core/constants/api_constants.dart';
 import '../core/utils/token_storage.dart';
@@ -89,6 +88,73 @@ class ProfileService {
       final res = await http.Response.fromStream(streamed);
       if (res.statusCode == 200) {
         return UserModel.fromJson(jsonDecode(res.body) as Map<String, dynamic>);
+      }
+      throw 'errorGeneric';
+    } on SocketException {
+      throw 'errorNetwork';
+    }
+  }
+
+  /// Toggles follow state for [targetUserId].
+  /// Returns a map with `is_following` (bool) and `followers_count` (int).
+  Future<Map<String, dynamic>> toggleFollow(int targetUserId) async {
+    try {
+      final token = await _token();
+      final res = await http.post(
+        Uri.parse(ApiConstants.profileFollow(targetUserId)),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type':  'application/json',
+        },
+      );
+      if (res.statusCode == 200) {
+        return jsonDecode(res.body) as Map<String, dynamic>;
+      }
+      throw 'errorGeneric';
+    } on SocketException {
+      throw 'errorNetwork';
+    }
+  }
+
+  /// Fetches the list of users who follow [userId].
+  Future<List<UserModel>> fetchFollowers(int userId) async {
+    try {
+      final token = await _token();
+      final res = await http.get(
+        Uri.parse(ApiConstants.profileFollowers(userId)),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type':  'application/json',
+        },
+      );
+      if (res.statusCode == 200) {
+        final list = jsonDecode(res.body) as List;
+        return list
+            .map((e) => UserModel.fromJson(e as Map<String, dynamic>))
+            .toList();
+      }
+      throw 'errorGeneric';
+    } on SocketException {
+      throw 'errorNetwork';
+    }
+  }
+
+  /// Fetches the list of users that [userId] follows.
+  Future<List<UserModel>> fetchFollowing(int userId) async {
+    try {
+      final token = await _token();
+      final res = await http.get(
+        Uri.parse(ApiConstants.profileFollowing(userId)),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type':  'application/json',
+        },
+      );
+      if (res.statusCode == 200) {
+        final list = jsonDecode(res.body) as List;
+        return list
+            .map((e) => UserModel.fromJson(e as Map<String, dynamic>))
+            .toList();
       }
       throw 'errorGeneric';
     } on SocketException {

@@ -130,6 +130,18 @@ class AppLocalizationsAr extends AppLocalizations {
   String get posts => 'المنشورات';
 
   @override
+  String get followers => 'المتابعون';
+
+  @override
+  String get following => 'المتابَعون';
+
+  @override
+  String get follow => 'متابعة';
+
+  @override
+  String get unfollow => 'إلغاء المتابعة';
+
+  @override
   String get noPostsProfile => 'لا توجد منشورات بعد';
 
   @override
