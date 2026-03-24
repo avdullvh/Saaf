@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../models/post_model.dart';
-import '../../../providers/auth_provider.dart';
 import '../../../providers/feed_provider.dart';
 import '../../profile/profile_screen.dart';
 import 'comment_sheet.dart';
@@ -45,8 +44,6 @@ class PostCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final currentUserId = context.watch<AuthProvider>().user?.id;
-    final isMyPost = post.authorId == currentUserId;
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -102,67 +99,6 @@ class PostCard extends StatelessWidget {
                       ],
                     ),
                   ),
-                  if (isMyPost)
-                    IconButton(
-                      icon: Icon(Icons.delete_outline, color: Colors.red.shade400, size: 20),
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                      onPressed: () async {
-                        final confirm = await showDialog<bool>(
-                          context: context,
-                          builder: (ctx) => Dialog(
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                            clipBehavior: Clip.antiAlias,
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Padding(
-                                  padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
-                                  child: Column(
-                                    children: [
-                                      Text(
-                                        l10n.deletePostTitle ?? 'Delete post?',
-                                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-                                        textAlign: TextAlign.center,
-                                      ),
-                                      const SizedBox(height: 12),
-                                      Text(
-                                        l10n.deletePostConfirm ?? 'After this it will be permanently deleted.',
-                                        textAlign: TextAlign.center,
-                                        style: const TextStyle(color: AppColors.textSecondary, fontSize: 14, height: 1.3),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                const Divider(height: 1, thickness: 1),
-                                InkWell(
-                                  onTap: () => Navigator.pop(ctx, true),
-                                  child: Container(
-                                    width: double.infinity,
-                                    padding: const EdgeInsets.symmetric(vertical: 16.0),
-                                    alignment: Alignment.center,
-                                    child: const Text('Delete', style: TextStyle(color: Colors.red, fontSize: 16, fontWeight: FontWeight.bold)),
-                                  ),
-                                ),
-                                const Divider(height: 1, thickness: 1),
-                                InkWell(
-                                  onTap: () => Navigator.pop(ctx, false),
-                                  child: Container(
-                                    width: double.infinity,
-                                    padding: const EdgeInsets.symmetric(vertical: 16.0),
-                                    alignment: Alignment.center,
-                                    child: Text(l10n.cancel ?? 'Cancel', style: const TextStyle(fontSize: 16)),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                        if (confirm == true && context.mounted) {
-                          context.read<FeedProvider>().deletePost(post.id);
-                        }
-                      },
-                    ),
                 ],
               ),
             ),

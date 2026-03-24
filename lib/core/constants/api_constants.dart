@@ -18,7 +18,6 @@ class ApiConstants {
   static const String posts = '$baseUrl/posts/';
   static String postLike(int id)     => '$baseUrl/posts/$id/like/';
   static String postComments(int id) => '$baseUrl/posts/$id/comments/';
-  static String postDelete(int id)   => '$baseUrl/posts/$id/';
 
   // Profile
   static String profile(int id)       => '$baseUrl/profile/$id/';

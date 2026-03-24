@@ -129,25 +129,6 @@ class FeedProvider extends ChangeNotifier {
     return comment;
   }
 
-  /// Deletes a post locally first (optimistic UI), then calls the service.
-  /// If the server call fails, it reverts the local deletion.
-  Future<void> deletePost(int postId) async {
-    final idx = _posts.indexWhere((p) => p.id == postId);
-    if (idx == -1) return;
-
-    final removedPost = _posts[idx];
-    _posts.removeAt(idx);
-    notifyListeners();
-
-    try {
-      await _service.deletePost(postId);
-    } catch (e) {
-      _posts.insert(idx, removedPost);
-      _errorKey = e.toString();
-      notifyListeners();
-    }
-  }
-
   /// Clears any stored error key and resets status to idle.
   void clearError() {
     _errorKey = null;

@@ -154,17 +154,4 @@ class FeedService {
       return []; // Silently fallback to no recommendations on error
     }
   }
-
-  /// Deletes a user's post permanently.
-  Future<void> deletePost(int postId) async {
-    try {
-      final res = await http.delete(
-        Uri.parse(ApiConstants.postDelete(postId)),
-        headers: await _authJsonHeaders(),
-      );
-      if (res.statusCode != 204) throw 'errorGeneric';
-    } on SocketException {
-      throw 'errorNetwork';
-    }
-  }
 }

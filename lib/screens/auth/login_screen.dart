@@ -130,9 +130,6 @@ class _LoginScreenState extends State<LoginScreen> {
             Expanded(
               child: Center(
                 child: SingleChildScrollView(
-                  physics: MediaQuery.of(context).viewInsets.bottom > 0
-                      ? const ClampingScrollPhysics()
-                      : const NeverScrollableScrollPhysics(),
                   padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
                   child: ConstrainedBox(
                     constraints: BoxConstraints(

@@ -66,8 +66,6 @@
 
   "darkMode": "التبديل إلى الوضع الداكن",
   "lightMode": "التبديل إلى الوضع الفاتح",
-  "deletePostTitle": "حذف المنشور",
-  "deletePostConfirm": "هل أنت متأكد أنك تريد حذف هذا المنشور؟",
   "cancel": "إلغاء",
 
   "language": "اللغة",
