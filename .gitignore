@@ -61,3 +61,5 @@ saaf_backend/node_modules/
 .env
 db.sqlite3
 
+# Large ML Models
+model/

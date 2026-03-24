@@ -7,7 +7,7 @@ from django.apps import AppConfig
 
 
 CLASS_NAMES = {0: "KHALAS", 1: "RAZEEZ", 2: "SHISHI"}
-MODEL_PATH  = "/Users/abdullah/Downloads/MarginOfError/convnext_tiny_best_on_val_no_kfold_aug_convnext_tiny.pth"
+MODEL_PATH  = "/Users/abdullah/Documents/KFU/Grad Project/saaf/model/MarginOfError/convnext_tiny_best_on_val_no_kfold_aug_convnext_tiny.pth"
 
 _model  = None
 _device = None
