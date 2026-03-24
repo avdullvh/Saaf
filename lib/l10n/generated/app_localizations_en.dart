@@ -179,6 +179,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get lightMode => 'Switch to Light Mode';
 
   @override
+  String get deletePostTitle => 'Delete Post';
+
+  @override
+  String get deletePostConfirm => 'Are you sure you want to delete this post?';
+
+  @override
   String get cancel => 'Cancel';
 
   @override

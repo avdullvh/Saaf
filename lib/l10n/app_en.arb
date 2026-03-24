@@ -66,6 +66,8 @@
 
   "darkMode": "Switch to Dark Mode",
   "lightMode": "Switch to Light Mode",
+  "deletePostTitle": "Delete Post",
+  "deletePostConfirm": "Are you sure you want to delete this post?",
   "cancel": "Cancel",
 
   "language": "Language",

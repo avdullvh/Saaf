@@ -178,6 +178,12 @@ class AppLocalizationsAr extends AppLocalizations {
   String get lightMode => 'التبديل إلى الوضع الفاتح';
 
   @override
+  String get deletePostTitle => 'حذف المنشور';
+
+  @override
+  String get deletePostConfirm => 'هل أنت متأكد أنك تريد حذف هذا المنشور؟';
+
+  @override
   String get cancel => 'إلغاء';
 
   @override

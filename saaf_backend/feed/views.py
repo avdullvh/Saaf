@@ -65,3 +65,18 @@ def comments(request, post_id):
         ser.save(post=post, author=request.user)
         return Response(ser.data, status=status.HTTP_201_CREATED)
     return Response(ser.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+def delete_post(request, post_id):
+    try:
+        post = Post.objects.get(pk=post_id)
+    except Post.DoesNotExist:
+        return Response({'detail': 'Not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+    # Only allow the author to delete their own post
+    if post.author != request.user:
+        return Response({'detail': 'Not authorized to delete this post.'}, status=status.HTTP_403_FORBIDDEN)
+
+    post.delete()
+    return Response(status=status.HTTP_204_NO_CONTENT)

@@ -4,7 +4,7 @@
 class ApiConstants {
   ApiConstants._();
 
-  static const String baseUrl = 'http://127.0.0.1:8000/api';
+  static const String baseUrl = 'http://192.168.0.48:8000/api';
 
   // Auth
   static const String login    = '$baseUrl/auth/login/';
@@ -18,6 +18,7 @@ class ApiConstants {
   static const String posts = '$baseUrl/posts/';
   static String postLike(int id)     => '$baseUrl/posts/$id/like/';
   static String postComments(int id) => '$baseUrl/posts/$id/comments/';
+  static String postDelete(int id)   => '$baseUrl/posts/$id/';
 
   // Profile
   static String profile(int id)       => '$baseUrl/profile/$id/';

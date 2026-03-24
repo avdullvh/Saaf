@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import '../models/post_model.dart';
 import '../models/user_model.dart';
 import '../services/profile_service.dart';
+import '../services/feed_service.dart';
 
 enum ProfileStatus { idle, loading, success, error }
 
@@ -57,6 +58,31 @@ class ProfileProvider extends ChangeNotifier {
       _status   = ProfileStatus.error;
     }
     notifyListeners();
+  }
+
+  /// Deletes a user's post permanently from the profile feed natively.
+  Future<void> deletePost(int postId) async {
+    final idx = _posts.indexWhere((p) => p.id == postId);
+    if (idx == -1) return;
+
+    final removedPost = _posts[idx];
+    _posts.removeAt(idx);
+    
+    if (_profile != null) {
+      _profile = _profile!.copyWith(postCount: _profile!.postCount - 1);
+    }
+    notifyListeners();
+
+    try {
+      await FeedService().deletePost(postId);
+    } catch (e) {
+      _posts.insert(idx, removedPost);
+      if (_profile != null) {
+        _profile = _profile!.copyWith(postCount: _profile!.postCount + 1);
+      }
+      _errorKey = e.toString();
+      notifyListeners();
+    }
   }
 
   /// Seeds the provider with the logged-in user data immediately after login.

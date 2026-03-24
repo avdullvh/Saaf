@@ -76,48 +76,81 @@ class _ShellScreenState extends State<ShellScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(l10n.appName),
         automaticallyImplyLeading: false,
-        // ── Dark mode toggle (top-left) — scoped Consumer avoids full rebuild
-        leading: Consumer<ThemeProvider>(
-          builder: (_, tp, __) => IconButton(
-            icon: Icon(
-              tp.isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
+        titleSpacing: 0,
+        title: Directionality(
+          textDirection: TextDirection.ltr,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                // ── Dark mode toggle (Left) ──
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Consumer<ThemeProvider>(
+                    builder: (_, tp, __) => IconButton(
+                      icon: Icon(
+                        tp.isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
+                      ),
+                      tooltip: tp.isDark ? l10n.lightMode : l10n.darkMode,
+                      onPressed: () => context.read<ThemeProvider>().toggleTheme(),
+                    ),
+                  ),
+                ),
+                // ── Title ──
+                const Text(
+                  'Saaf',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.primary,
+                  ),
+                ),
+                // ── Right Actions (Lang & Logout) ──
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      TextButton(
+                        style: TextButton.styleFrom(
+                          padding: EdgeInsets.zero,
+                          minimumSize: const Size(40, 40),
+                        ),
+                        onPressed: () => context.read<LocaleProvider>().setLocale(
+                          locale.isArabic ? const Locale('en') : const Locale('ar'),
+                        ),
+                        child: Text(
+                          locale.isArabic ? 'EN' : 'ع',
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.logout_rounded),
+                        tooltip: l10n.logout,
+                        onPressed: () async {
+                          context.read<ClassificationProvider>().reset();
+                          context.read<FeedProvider>().clear();
+                          await context.read<AuthProvider>().logout();
+                          if (context.mounted) {
+                            Navigator.of(context).pushAndRemoveUntil(
+                              PageRouteBuilder(
+                                pageBuilder: (_, __, ___) => const LoginScreen(),
+                                transitionDuration: Duration.zero,
+                              ),
+                              (_) => false,
+                            );
+                          }
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
-            tooltip: tp.isDark ? l10n.lightMode : l10n.darkMode,
-            onPressed: () => context.read<ThemeProvider>().toggleTheme(),
           ),
         ),
-        actions: [
-          // Language toggle
-          TextButton(
-            onPressed: () => context.read<LocaleProvider>().setLocale(
-              locale.isArabic ? const Locale('en') : const Locale('ar'),
-            ),
-            child: Text(locale.isArabic ? 'EN' : 'ع'),
-          ),
-          // Logout
-          IconButton(
-            icon: const Icon(Icons.logout),
-            tooltip: l10n.logout,
-          onPressed: () async {
-              // Clear all cached state before logging out so the
-              // next user gets a completely fresh feed with correct avatars.
-              context.read<ClassificationProvider>().reset();
-              context.read<FeedProvider>().clear();
-              await context.read<AuthProvider>().logout();
-              if (context.mounted) {
-                Navigator.of(context).pushAndRemoveUntil(
-                  PageRouteBuilder(
-                    pageBuilder: (_, __, ___) => const LoginScreen(),
-                    transitionDuration: Duration.zero,
-                  ),
-                  (_) => false,
-                );
-              }
-            },
-          ),
-        ],
       ),
 
       body: IndexedStack(index: _currentIndex, children: _pages),

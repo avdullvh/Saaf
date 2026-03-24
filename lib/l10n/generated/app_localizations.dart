@@ -428,6 +428,18 @@ abstract class AppLocalizations {
   /// **'Switch to Light Mode'**
   String get lightMode;
 
+  /// No description provided for @deletePostTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Post'**
+  String get deletePostTitle;
+
+  /// No description provided for @deletePostConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to delete this post?'**
+  String get deletePostConfirm;
+
   /// No description provided for @cancel.
   ///
   /// In en, this message translates to:
