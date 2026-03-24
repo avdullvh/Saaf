@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../models/classification_result_model.dart';
 import '../models/post_model.dart';
+import '../models/user_model.dart';
 import '../services/feed_service.dart';
 
 enum FeedStatus { idle, loading, success, error }
@@ -9,11 +10,13 @@ enum FeedStatus { idle, loading, success, error }
 class FeedProvider extends ChangeNotifier {
   final _service = FeedService();
 
-  List<PostModel> _posts    = [];
-  FeedStatus      _status   = FeedStatus.idle;
+  List<PostModel> _posts           = [];
+  List<UserModel> _recommendations = [];
+  FeedStatus      _status          = FeedStatus.idle;
   String?         _errorKey;
 
-  List<PostModel> get posts     => List.unmodifiable(_posts);
+  List<PostModel> get posts           => List.unmodifiable(_posts);
+  List<UserModel> get recommendations => List.unmodifiable(_recommendations);
   FeedStatus      get status    => _status;
   String?         get errorKey  => _errorKey;
   bool            get isLoading => _status == FeedStatus.loading;
@@ -26,13 +29,19 @@ class FeedProvider extends ChangeNotifier {
     _errorKey = null;
     notifyListeners();
     try {
+      // Fetch posts first
       _posts  = await _service.fetchPosts();
       _status = FeedStatus.success;
+      notifyListeners();
+      
+      // Lazily fetch recommendations so we don't block the feed from showing
+      _recommendations = await _service.fetchRecommendations();
+      notifyListeners();
     } catch (e) {
       _errorKey = e.toString();
       _status   = FeedStatus.error;
+      notifyListeners();
     }
-    notifyListeners();
   }
 
   /// Creates a new feed post from a [ClassificationResult] and an optional
@@ -131,9 +140,10 @@ class FeedProvider extends ChangeNotifier {
   /// Call on logout so the next user always gets a fresh feed
   /// with up-to-date author avatar URLs.
   void clear() {
-    _posts    = [];
-    _status   = FeedStatus.idle;
-    _errorKey = null;
+    _posts           = [];
+    _recommendations = [];
+    _status          = FeedStatus.idle;
+    _errorKey        = null;
     notifyListeners();
   }
 }

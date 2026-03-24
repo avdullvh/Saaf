@@ -11,6 +11,7 @@ import '../core/constants/api_constants.dart';
 import '../core/utils/token_storage.dart';
 import '../models/classification_result_model.dart';
 import '../models/post_model.dart';
+import '../models/user_model.dart';
 
 class FeedService {
   Future<Map<String, String>> _authJsonHeaders() async {
@@ -132,6 +133,25 @@ class FeedService {
       throw 'errorGeneric';
     } on SocketException {
       throw 'errorNetwork';
+    }
+  }
+
+  /// Fetches recommended users based on Adamic-Adar logic
+  Future<List<UserModel>> fetchRecommendations() async {
+    try {
+      final res = await http.get(
+        Uri.parse(ApiConstants.recommendations),
+        headers: await _authJsonHeaders(),
+      );
+      if (res.statusCode == 200) {
+        final list = jsonDecode(res.body) as List;
+        return list
+            .map((e) => UserModel.fromJson(e as Map<String, dynamic>))
+            .toList();
+      }
+      return []; // Return empty list on non-200 rather than crashing the feed
+    } catch (_) {
+      return []; // Silently fallback to no recommendations on error
     }
   }
 }

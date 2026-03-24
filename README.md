@@ -59,7 +59,8 @@ The app uses a "Reload on Tab" strategy. To ensure that likes and comments made 
 
 ## 🛠 Setup and Installation
 
-### Backend (Django)
+### 1. Main Backend (Django)
+Runs the core application, database, and social features.
 1. **Database**: Ensure PostgreSQL is running.
    ```bash
    createdb saaf_db
@@ -71,17 +72,29 @@ The app uses a "Reload on Tab" strategy. To ensure that likes and comments made 
    ```
 3. **Run**:
    ```bash
+   cd saaf_backend
    pip install -r requirements.txt
    python manage.py migrate
    python manage.py runserver
    ```
 
-### Frontend (Flutter)
-1. **Install Gems/Dependencies**:
+### 2. AI Inference Engine (FastAPI)
+Runs the local PyTorch palm classification model.
+1. **Model checkpoint**: Ensure your `.pth` model file is correctly referenced in `saaf_backend/main.py` (line 18).
+2. **Run**:
+   ```bash
+   cd saaf_backend
+   pip install fastapi uvicorn torch torchvision pillow timm
+   uvicorn main:app --reload --port 8000
+   ```
+*(Note: Ensure your Django backend is running on `port 8080` or adjust Flutter API constants accordingly if running both locally).*
+
+### 3. Frontend (Flutter)
+1. **Install Dependencies**:
    ```bash
    flutter pub get
    ```
-2. **Run**:
+2. **Run the App**:
    ```bash
    flutter run
    ```

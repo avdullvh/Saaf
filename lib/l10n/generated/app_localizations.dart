@@ -356,6 +356,12 @@ abstract class AppLocalizations {
   /// **'Unfollow'**
   String get unfollow;
 
+  /// No description provided for @peopleYouMayKnow.
+  ///
+  /// In en, this message translates to:
+  /// **'People you may know'**
+  String get peopleYouMayKnow;
+
   /// No description provided for @noPostsProfile.
   ///
   /// In en, this message translates to:

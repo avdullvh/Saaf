@@ -4,17 +4,16 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../../providers/feed_provider.dart';
 import '../../core/theme/app_theme.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/locale_provider.dart';
+import '../../providers/theme_provider.dart';
 import '../../screens/shell_screen.dart';
 import 'register_screen.dart';
 import '../../l10n/generated/app_localizations.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
-
   @override
   State<LoginScreen> createState() => _LoginScreenState();
 }
@@ -33,7 +32,7 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _loadSavedCredentials() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs    = await SharedPreferences.getInstance();
     final email    = prefs.getString('saved_email') ?? '';
     final password = prefs.getString('saved_password') ?? '';
     if (email.isNotEmpty) {
@@ -72,14 +71,17 @@ class _LoginScreenState extends State<LoginScreen> {
     );
     if (ok && mounted) {
       await _saveCredentials();
-      Navigator.of(context).pushReplacement(
-        PageRouteBuilder(
-          pageBuilder: (_, __, ___) => const ShellScreen(),
-          transitionDuration: Duration.zero,
-        ),
-      );
+      Navigator.of(context).pushReplacement(PageRouteBuilder(
+        pageBuilder: (_, __, ___) => const ShellScreen(),
+        transitionDuration: Duration.zero,
+      ));
     }
   }
+
+  void _goRegister() => Navigator.of(context).push(PageRouteBuilder(
+    pageBuilder: (_, __, ___) => const RegisterScreen(),
+    transitionDuration: Duration.zero,
+  ));
 
   @override
   Widget build(BuildContext context) {
@@ -89,152 +91,178 @@ class _LoginScreenState extends State<LoginScreen> {
 
     return Scaffold(
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // ── Language switcher ──
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: TextButton.icon(
-                    onPressed: () => locale.setLocale(
-                      locale.isArabic
+        child: Column(
+          children: [
+            // ── Toggle row — always LTR, never flips with locale ───────────
+            Directionality(
+              textDirection: TextDirection.ltr,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 24, vertical: 24),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    // Dark mode — always LEFT
+                    Consumer<ThemeProvider>(
+                      builder: (_, tp, __) => IconButton(
+                        icon: Icon(tp.isDark
+                            ? Icons.light_mode_rounded
+                            : Icons.dark_mode_rounded),
+                        tooltip: tp.isDark ? l10n.lightMode : l10n.darkMode,
+                        onPressed: () =>
+                            context.read<ThemeProvider>().toggleTheme(),
+                      ),
+                    ),
+                    // Language — always RIGHT
+                    TextButton.icon(
+                      onPressed: () => locale.setLocale(locale.isArabic
                           ? const Locale('en')
-                          : const Locale('ar'),
-                    ),
-                    icon: const Icon(Icons.language, size: 18),
-                    label: Text(locale.isArabic ? 'English' : 'العربية'),
-                  ),
-                ),
-
-                const SizedBox(height: 16),
-
-                // ── Logo / App name ──
-                Column(
-                  children: [
-                    Container(
-                      width: 80, height: 80,
-                      decoration: BoxDecoration(
-                        color: AppColors.primary,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: const Icon(
-                        Icons.eco_rounded,
-                        size: 48,
-                        color: Colors.white,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      l10n.appName,
-                      style: Theme.of(context).textTheme.headlineMedium
-                          ?.copyWith(
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.bold,
-                      ),
+                          : const Locale('ar')),
+                      icon: const Icon(Icons.language, size: 18),
+                      label: Text(locale.isArabic ? 'English' : 'العربية'),
                     ),
                   ],
                 ),
-
-                const SizedBox(height: 40),
-
-                // ── Email ──
-                TextFormField(
-                  controller: _emailCtrl,
-                  keyboardType: TextInputType.emailAddress,
-                  decoration: InputDecoration(
-                    labelText: l10n.email,
-                    prefixIcon: const Icon(Icons.email_outlined),
-                  ),
-                  validator: (v) => (v == null || !v.contains('@'))
-                      ? l10n.email
-                      : null,
-                ),
-
-                const SizedBox(height: 16),
-
-                // ── Password ──
-                TextFormField(
-                  controller: _passCtrl,
-                  obscureText: _obscure,
-                  decoration: InputDecoration(
-                    labelText: l10n.password,
-                    prefixIcon: const Icon(Icons.lock_outline),
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        _obscure
-                            ? Icons.visibility_outlined
-                            : Icons.visibility_off_outlined,
-                      ),
-                      onPressed: () => setState(() => _obscure = !_obscure),
-                    ),
-                  ),
-                  validator: (v) => (v == null || v.length < 6)
-                      ? l10n.password
-                      : null,
-                ),
-
-                const SizedBox(height: 4),
-
-                // ── Remember Me + Forgot password row ──
-                Row(
-                  children: [
-                    Checkbox(
-                      value: _rememberMe,
-                      activeColor: AppColors.primary,
-                      onChanged: (v) => setState(() => _rememberMe = v ?? false),
-                    ),
-                    Text(l10n.rememberMe,
-                        style: TextStyle(color: AppColors.textSecondary)),
-                    const Spacer(),
-                    TextButton(
-                      onPressed: () {},
-                      child: Text(l10n.forgotPassword),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 4),
-
-                // ── Error message ──
-                if (auth.errorKey != null)
-                  _ErrorBanner(
-                    message: _resolveError(l10n, auth.errorKey!),
-                    onDismiss: () => context.read<AuthProvider>().clearError(),
-                  ),
-
-                const SizedBox(height: 16),
-
-                // ── Login button ──
-                ElevatedButton(
-                  onPressed: auth.isLoading ? null : _submit,
-                  child: auth.isLoading
-                      ? const SizedBox(
-                          height: 22, width: 22,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2.5,
-                            color: Colors.white,
-                          ),
-                        )
-                      : Text(l10n.login),
-                ),
-
-                const SizedBox(height: 24),
-
-                // ── Go to register ──
-                TextButton(
-                  onPressed: () => Navigator.of(context).push(
-                    MaterialPageRoute(
-                        builder: (_) => const RegisterScreen()),
-                  ),
-                  child: Text(l10n.noAccount),
-                ),
-              ],
+              ),
             ),
-          ),
+
+            // ── Centered content block: logo sits above fields naturally ───
+            Expanded(
+              child: Center(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      minHeight: MediaQuery.of(context).size.height - 150, // Available height minus toggle row
+                    ),
+                    child: IntrinsicHeight(
+                      child: Form(
+                        key: _formKey,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            // ── Logo at top ──────────────────────────────────────
+                            Center(
+                              child: ColorFiltered(
+                                colorFilter: const ColorFilter.mode(
+                                  AppColors.primary, BlendMode.srcIn),
+                                child: Image.asset(
+                                  'assets/icons/saaf_logo2.png',
+                                  width: 220, height: 220,
+                                  fit: BoxFit.contain,
+                                ),
+                              ),
+                            ),
+
+                            // Pushes text forms up slightly
+                            const Spacer(flex: 1),
+
+                            // ── Email ────────────────────────────────────────────
+                            TextFormField(
+                              controller: _emailCtrl,
+                              keyboardType: TextInputType.emailAddress,
+                              decoration: InputDecoration(
+                                labelText: l10n.email,
+                                prefixIcon: const Icon(Icons.email_outlined),
+                              ),
+                              validator: (v) =>
+                                  (v == null || !v.contains('@'))
+                                      ? l10n.email
+                                      : null,
+                            ),
+
+                            const SizedBox(height: 16),
+
+                            // ── Password ─────────────────────────────────────────
+                            TextFormField(
+                              controller: _passCtrl,
+                              obscureText: _obscure,
+                              decoration: InputDecoration(
+                                labelText: l10n.password,
+                                prefixIcon: const Icon(Icons.lock_outline),
+                                suffixIcon: IconButton(
+                                  icon: Icon(_obscure
+                                      ? Icons.visibility_outlined
+                                      : Icons.visibility_off_outlined),
+                                  onPressed: () =>
+                                      setState(() => _obscure = !_obscure),
+                                ),
+                              ),
+                              validator: (v) =>
+                                  (v == null || v.length < 6)
+                                      ? l10n.password
+                                      : null,
+                            ),
+
+                            const SizedBox(height: 4),
+
+                            // ── Remember Me + Forgot password ────────────────────
+                            Row(
+                              children: [
+                                Checkbox(
+                                  value: _rememberMe,
+                                  activeColor: AppColors.primary,
+                                  onChanged: (v) =>
+                                      setState(() => _rememberMe = v ?? false),
+                                ),
+                                Text(l10n.rememberMe,
+                                    style: const TextStyle(
+                                        color: AppColors.textSecondary)),
+                                const Spacer(),
+                                TextButton(
+                                  onPressed: () {},
+                                  child: Text(l10n.forgotPassword),
+                                ),
+                              ],
+                            ),
+
+                            const SizedBox(height: 4),
+
+                            // ── Error ────────────────────────────────────────────
+                            if (auth.errorKey != null)
+                              _ErrorBanner(
+                                message: _resolveError(l10n, auth.errorKey!),
+                                onDismiss: () =>
+                                    context.read<AuthProvider>().clearError(),
+                              ),
+
+                            const SizedBox(height: 16),
+
+                            // ── Login button ─────────────────────────────────────
+                            SizedBox(
+                              width: double.infinity,
+                              child: ElevatedButton(
+                                onPressed: auth.isLoading ? null : _submit,
+                                child: auth.isLoading
+                                    ? const SizedBox(
+                                        height: 22, width: 22,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2.5,
+                                          color: Colors.white,
+                                        ))
+                                    : Text(l10n.login),
+                              ),
+                            ),
+
+                            const SizedBox(height: 20),
+
+                            // ── Go to register ───────────────────────────────────
+                            TextButton(
+                              onPressed: _goRegister,
+                              child: Text(l10n.noAccount),
+                            ),
+                            
+                            // More space at the bottom to push the forms up towards the center
+                            const Spacer(flex: 4),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -249,10 +277,6 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 }
 
-
-// ─────────────────────────────────────────────
-// Shared widget — reusable error banner
-// ─────────────────────────────────────────────
 class _ErrorBanner extends StatelessWidget {
   final String message;
   final VoidCallback onDismiss;
@@ -263,19 +287,17 @@ class _ErrorBanner extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: AppColors.error.withOpacity(0.1),
+        color: AppColors.error.withValues(alpha: 0.10),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppColors.error.withOpacity(0.4)),
+        border: Border.all(color: AppColors.error.withValues(alpha: 0.40)),
       ),
       child: Row(
         children: [
           const Icon(Icons.error_outline, color: AppColors.error, size: 18),
           const SizedBox(width: 8),
           Expanded(
-            child: Text(
-              message,
-              style: const TextStyle(color: AppColors.error, fontSize: 13),
-            ),
+            child: Text(message,
+                style: const TextStyle(color: AppColors.error, fontSize: 13)),
           ),
           GestureDetector(
             onTap: onDismiss,

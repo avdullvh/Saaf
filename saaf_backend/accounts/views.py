@@ -8,6 +8,7 @@ from rest_framework.response import Response
 
 from .models import Follow, User
 from .serializers import RegisterSerializer, LoginSerializer, UserSerializer, get_tokens
+from .recommendations import adamic_adar_recommendations
 
 
 @api_view(['POST'])
@@ -132,3 +133,15 @@ def following_list(request, user_id):
 
     users = User.objects.filter(followers__follower=target)
     return Response(UserSerializer(users, many=True, context={'request': request}).data)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def recommendations(request):
+    """
+    Returns a list of recommended users to follow based on the Adamic-Adar Index.
+    Excludes users the requesting user is already following, and the user themselves.
+    """
+    recommended_users = adamic_adar_recommendations(request.user, limit=10)
+    serializer = UserSerializer(recommended_users, many=True, context={'request': request})
+    return Response(serializer.data, status=status.HTTP_200_OK)

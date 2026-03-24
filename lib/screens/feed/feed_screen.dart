@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../core/theme/app_theme.dart';
 import '../../providers/feed_provider.dart';
 import 'widgets/post_card.dart';
+import 'widgets/recommendation_card.dart';
 import '../../l10n/generated/app_localizations.dart';
 
 /// Body widget used inside ShellScreen's IndexedStack (tab 1 – Feed).
@@ -88,10 +89,29 @@ class _FeedBodyState extends State<FeedBody> {
       child: ListView.builder(
         padding: const EdgeInsets.symmetric(vertical: 8),
         itemCount: feed.posts.length,
-        itemBuilder: (_, i) => PostCard(
-          post:  feed.posts[i],
-          index: i,
-        ),
+        itemBuilder: (_, i) {
+          final postCard = PostCard(
+            post:  feed.posts[i],
+            index: i,
+          );
+          
+          // Every 6 posts (index 5, 11, 17...), inject a recommendation card below it
+          if (i > 0 && (i + 1) % 6 == 0 && feed.recommendations.isNotEmpty) {
+            // Cycle through recommendations
+            final recIndex = ((i + 1) ~/ 6 - 1) % feed.recommendations.length;
+            final user = feed.recommendations[recIndex];
+            
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                postCard,
+                RecommendationCard(user: user),
+              ],
+            );
+          }
+          
+          return postCard;
+        },
       ),
     );
   }

@@ -142,6 +142,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get unfollow => 'إلغاء المتابعة';
 
   @override
+  String get peopleYouMayKnow => 'أشخاص قد تعرفهم';
+
+  @override
   String get noPostsProfile => 'لا توجد منشورات بعد';
 
   @override

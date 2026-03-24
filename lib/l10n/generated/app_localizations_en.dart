@@ -143,6 +143,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get unfollow => 'Unfollow';
 
   @override
+  String get peopleYouMayKnow => 'People you may know';
+
+  @override
   String get noPostsProfile => 'No posts yet';
 
   @override

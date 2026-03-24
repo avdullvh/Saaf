@@ -1,5 +1,4 @@
-import 'dart:io' as io;
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
@@ -22,7 +21,8 @@ class UploadBody extends StatelessWidget {
         imageQuality: 85,
       );
       if (xFile == null) return;
-      ctx.read<ClassificationProvider>().setImage(xFile);
+      // setImage is now async — it converts HEIC→JPEG before storing.
+      await ctx.read<ClassificationProvider>().setImage(xFile);
     } catch (_) {
       if (ctx.mounted) {
         ScaffoldMessenger.of(ctx).showSnackBar(
@@ -72,7 +72,7 @@ class UploadBody extends StatelessWidget {
                   child: classifier.selectedImage == null
                       ? _PlaceholderBox(label: l10n.uploadPrompt)
                       : _ImagePreview(
-                          file: classifier.selectedImage!,
+                          bytes:    classifier.previewBytes,
                           onRePick: () => _showPickerSheet(context),
                         ),
                 ),
@@ -205,9 +205,9 @@ class _PlaceholderBox extends StatelessWidget {
 }
 
 class _ImagePreview extends StatelessWidget {
-  final XFile file;
+  final Uint8List? bytes;
   final VoidCallback onRePick;
-  const _ImagePreview({required this.file, required this.onRePick});
+  const _ImagePreview({required this.bytes, required this.onRePick});
 
   @override
   Widget build(BuildContext context) {
@@ -216,9 +216,11 @@ class _ImagePreview extends StatelessWidget {
       children: [
         ClipRRect(
           borderRadius: BorderRadius.circular(20),
-          child: kIsWeb
-              ? Image.network(file.path, fit: BoxFit.cover)
-              : Image.file(io.File(file.path), fit: BoxFit.cover),
+          child: bytes != null
+              // Image.memory works on all platforms (web + native) and
+              // always receives browser-safe JPEG bytes from the provider.
+              ? Image.memory(bytes!, fit: BoxFit.cover)
+              : const Center(child: CircularProgressIndicator()),
         ),
         Positioned(
           bottom: 12, right: 12,

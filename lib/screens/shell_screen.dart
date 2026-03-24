@@ -26,17 +26,17 @@ class ShellScreen extends StatefulWidget {
 
 class _ShellScreenState extends State<ShellScreen> {
   late int _currentIndex;
-
-  static const List<Widget> _pages = [
-    UploadBody(),
-    FeedBody(),
-    ProfileBody(),
-  ];
+  late final List<Widget> _pages;
 
   @override
   void initState() {
     super.initState();
     _currentIndex = widget.initialIndex;
+    _pages = [
+      const UploadBody(),
+      const FeedBody(),
+      const ProfileBody(),
+    ];
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final user = context.read<AuthProvider>().user;
       if (user != null) {
@@ -67,25 +67,26 @@ class _ShellScreenState extends State<ShellScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final l10n          = AppLocalizations.of(context)!;
-    final locale        = context.watch<LocaleProvider>();
-    final themeProvider = context.watch<ThemeProvider>();
-
-
+    final l10n   = AppLocalizations.of(context)!;
+    final locale = context.watch<LocaleProvider>();
+    // NOTE: ThemeProvider is NOT watched here — only read in the Consumer
+    // below to avoid rebuilding the entire Scaffold+IndexedStack on theme
+    // toggle (which races with MaterialApp's rebuild and causes GlobalKey
+    // collisions in the BottomNavigationBar's ink renderers).
 
     return Scaffold(
       appBar: AppBar(
         title: Text(l10n.appName),
         automaticallyImplyLeading: false,
-        // ── Dark mode toggle (top-left) ───────────────────────────────────
-        leading: IconButton(
-          icon: Icon(
-            themeProvider.isDark
-                ? Icons.light_mode_rounded
-                : Icons.dark_mode_rounded,
+        // ── Dark mode toggle (top-left) — scoped Consumer avoids full rebuild
+        leading: Consumer<ThemeProvider>(
+          builder: (_, tp, __) => IconButton(
+            icon: Icon(
+              tp.isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
+            ),
+            tooltip: tp.isDark ? l10n.lightMode : l10n.darkMode,
+            onPressed: () => context.read<ThemeProvider>().toggleTheme(),
           ),
-          tooltip: themeProvider.isDark ? l10n.lightMode : l10n.darkMode,
-          onPressed: () => context.read<ThemeProvider>().toggleTheme(),
         ),
         actions: [
           // Language toggle
@@ -93,10 +94,7 @@ class _ShellScreenState extends State<ShellScreen> {
             onPressed: () => context.read<LocaleProvider>().setLocale(
               locale.isArabic ? const Locale('en') : const Locale('ar'),
             ),
-            child: Text(
-              locale.isArabic ? 'EN' : 'ع',
-              style: const TextStyle(color: Colors.white, fontSize: 16),
-            ),
+            child: Text(locale.isArabic ? 'EN' : 'ع'),
           ),
           // Logout
           IconButton(

@@ -43,15 +43,9 @@ class _ProfileBodyState extends State<ProfileBody> {
       posts:        profile.posts,
       isOwnProfile: true,
       isLoading:    profile.isLoading,
-      // Own profile never has a follow button
       isFollowing:       false,
       onFollowToggle:    null,
-      onLoadFollowers:   () => profile.loadFollowers(user?.id ?? 0),
-      onLoadFollowing:   () => profile.loadFollowing(user?.id ?? 0),
-      followersUsers:    profile.followers,
-      followingUsers:    profile.following,
-      followersLoading:  profile.followersLoading,
-      followingLoading:  profile.followingLoading,
+      provider:          profile,
     );
   }
 }
@@ -112,12 +106,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         isLoading:    false,
                         isFollowing:       profile.profile!.isFollowing,
                         onFollowToggle:    isOwn ? null : () => _localProvider.toggleFollow(),
-                        onLoadFollowers:   () => _localProvider.loadFollowers(widget.userId),
-                        onLoadFollowing:   () => _localProvider.loadFollowing(widget.userId),
-                        followersUsers:    profile.followers,
-                        followingUsers:    profile.following,
-                        followersLoading:  profile.followersLoading,
-                        followingLoading:  profile.followingLoading,
+                        provider:          profile,
                       ),
           );
         },
@@ -138,12 +127,7 @@ class _ProfileView extends StatelessWidget {
   // Follow-related params (null-safe: unused for own profile)
   final bool           isFollowing;
   final VoidCallback?  onFollowToggle;
-  final VoidCallback   onLoadFollowers;
-  final VoidCallback   onLoadFollowing;
-  final List<UserModel> followersUsers;
-  final List<UserModel> followingUsers;
-  final bool            followersLoading;
-  final bool            followingLoading;
+  final ProfileProvider provider;
 
   const _ProfileView({
     required this.user,
@@ -152,12 +136,7 @@ class _ProfileView extends StatelessWidget {
     required this.isLoading,
     required this.isFollowing,
     required this.onFollowToggle,
-    required this.onLoadFollowers,
-    required this.onLoadFollowing,
-    required this.followersUsers,
-    required this.followingUsers,
-    required this.followersLoading,
-    required this.followingLoading,
+    required this.provider,
   });
 
   @override
@@ -253,17 +232,11 @@ class _ProfileView extends StatelessWidget {
                     context,
                     title:    l10n.followers,
                     type:     _FollowListType.followers,
-                    onLoad:   onLoadFollowers,
-                    users:    followersUsers,
-                    loading:  followersLoading,
                   ),
                   onTapFollowing:  () => _showFollowList(
                     context,
                     title:    l10n.following,
                     type:     _FollowListType.following,
-                    onLoad:   onLoadFollowing,
-                    users:    followingUsers,
-                    loading:  followingLoading,
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -366,25 +339,38 @@ class _ProfileView extends StatelessWidget {
     BuildContext context, {
     required String         title,
     required _FollowListType type,
-    required VoidCallback    onLoad,
-    required List<UserModel> users,
-    required bool            loading,
   }) {
-    // Trigger load now (before sheet opens)
-    onLoad();
+    if (user == null) return;
+    final targetId = user!.id;
+    if (type == _FollowListType.followers) {
+      provider.loadFollowers(targetId);
+    } else {
+      provider.loadFollowing(targetId);
+    }
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      // The sheet is a pure display widget — no provider look-ups inside.
-      // We pass users + loading state in as ValueNotifiers so the sheet
-      // can rebuild when the parent provider notifies.
-      builder: (_) => _FollowListSheet(
-        title:   title,
-        type:    type,
-        users:   users,
-        loading: loading,
+      // Use ListenableBuilder with the provider, so it rebuilds when load completes
+      builder: (_) => ListenableBuilder(
+        listenable: provider,
+        builder: (ctx, _) {
+          final users = type == _FollowListType.followers
+              ? provider.followers
+              : provider.following;
+          final loading = type == _FollowListType.followers
+              ? provider.followersLoading
+              : provider.followingLoading;
+              
+          return _FollowListSheet(
+            title:   title,
+            type:    type,
+            users:   users,
+            loading: loading,
+          );
+        },
       ),
     );
   }

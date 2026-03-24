@@ -34,31 +34,42 @@ class PalmClassifierApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => ProfileProvider()),
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
       ],
-      child: Consumer3<LocaleProvider, AuthProvider, ThemeProvider>(
-        builder: (ctx, localeProvider, authProvider, themeProvider, _) {
-          return MaterialApp(
-            title: 'Saaf',
-            debugShowCheckedModeBanner: false,
+      // ── ThemeMode is read separately so theme toggles don't rebuild
+      //    the entire MaterialApp child tree (which causes ink-renderer
+      //    GlobalKey collisions when the nav-bar is remounted).
+      child: Selector<ThemeProvider, bool>(
+        selector: (_, tp) => tp.isDark,
+        builder: (ctx, isDark, _) {
+          return Consumer2<LocaleProvider, AuthProvider>(
+            builder: (ctx2, localeProvider, authProvider, _) {
+              return MaterialApp(
+                title: 'Saaf',
+                debugShowCheckedModeBanner: false,
 
-            // ── Theme ──
-            theme: AppTheme.lightTheme,
-            darkTheme: AppTheme.darkTheme,
-            themeMode: themeProvider.isDark ? ThemeMode.dark : ThemeMode.light,
+                // ── Theme ──
+                theme: AppTheme.lightTheme,
+                darkTheme: AppTheme.darkTheme,
+                themeMode: isDark ? ThemeMode.dark : ThemeMode.light,
+                // Instant switch — avoids TextStyle lerp crash on inherit mismatch
+                // and eliminates the animation window where two subtrees coexist.
+                themeAnimationDuration: Duration.zero,
 
-            // ── Localization ──
-            locale: localeProvider.locale,
-            supportedLocales: const [Locale('en'), Locale('ar')],
-            localizationsDelegates: const [
-              AppLocalizations.delegate,
-              GlobalMaterialLocalizations.delegate,
-              GlobalWidgetsLocalizations.delegate,
-              GlobalCupertinoLocalizations.delegate,
-            ],
+                // ── Localization ──
+                locale: localeProvider.locale,
+                supportedLocales: const [Locale('en'), Locale('ar')],
+                localizationsDelegates: const [
+                  AppLocalizations.delegate,
+                  GlobalMaterialLocalizations.delegate,
+                  GlobalWidgetsLocalizations.delegate,
+                  GlobalCupertinoLocalizations.delegate,
+                ],
 
-            // ── Routing: show login if not authenticated ──
-            home: authProvider.isAuthenticated
-                ? const ShellScreen()
-                : const LoginScreen(),
+                // ── Routing: show login if not authenticated ──
+                home: authProvider.isAuthenticated
+                    ? const ShellScreen()
+                    : const LoginScreen(),
+              );
+            },
           );
         },
       ),

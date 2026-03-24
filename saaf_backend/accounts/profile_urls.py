@@ -8,4 +8,5 @@ urlpatterns = [
     path('<int:user_id>/follow/',    views.follow_toggle,  name='profile-follow'),
     path('<int:user_id>/followers/', views.followers_list, name='profile-followers'),
     path('<int:user_id>/following/', views.following_list, name='profile-following'),
+    path('recommendations/',         views.recommendations, name='profile-recommendations'),
 ]

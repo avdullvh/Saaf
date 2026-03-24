@@ -25,4 +25,5 @@ class ApiConstants {
   static String profileFollow(int id) => '$baseUrl/profile/$id/follow/';
   static String profileFollowers(int id) => '$baseUrl/profile/$id/followers/';
   static String profileFollowing(int id) => '$baseUrl/profile/$id/following/';
+  static const String recommendations = '$baseUrl/profile/recommendations/';
 }
