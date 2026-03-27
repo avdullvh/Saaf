@@ -8,4 +8,5 @@ Pillow
 torch
 torchvision
 timm
+requests
 

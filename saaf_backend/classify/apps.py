@@ -42,6 +42,11 @@ class ClassifyConfig(AppConfig):
 
     def ready(self):
         global _model, _device
+        if os.environ.get("USE_LOCAL_MODEL", "false").lower() != "true":
+            print("[classify] Using Hugging Face inference (local model disabled)")
+            _model = None
+            _device = None
+            return
         import timm
         try:
             _device = (
