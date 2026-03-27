@@ -1,0 +1,9 @@
+.dart_tool
+.idea
+.vscode
+build
+**/__pycache__
+**/*.pyc
+saaf_backend/media
+saaf_backend/.env
+

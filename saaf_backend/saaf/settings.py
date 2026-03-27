@@ -69,7 +69,7 @@ WSGI_APPLICATION = 'saaf.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME':   'saaf_db',
+        'NAME':   os.environ.get('DB_NAME', 'saaf_db'),
         'USER':   os.environ.get('DB_USER', ''),  # empty = current OS user
         'PASSWORD': os.environ.get('DB_PASSWORD', ''),
         'HOST':   os.environ.get('DB_HOST', 'localhost'),

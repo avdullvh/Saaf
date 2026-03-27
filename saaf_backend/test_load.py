@@ -8,7 +8,7 @@ CLASS_NAMES = {
     2: "SHISHI" 
 }
 
-MODEL_PATH = "/Users/abdullah/Downloads/MarginOfError/convnext_tiny_best_on_val_no_kfold_aug_convnext_tiny.pth"
+MODEL_PATH = "C:\Users\faris\Desktop\graduation project\SaafAPP\Saaf\convnext_tiny_best_on_val_no_kfold_aug_convnext_tiny.pth"
 device = torch.device('cpu')
 model = convnext_tiny(weights=None)
 num_ftrs = model.classifier[2].in_features

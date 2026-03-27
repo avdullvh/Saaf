@@ -1,6 +1,24 @@
-# SAAF SAAF - Palm Tree Variety Classification & Community
+# SAAF SAAF (سعف)
+Palm tree variety classification + community app (Flutter + Django + PostgreSQL + PyTorch).
 
-SAAF SAAF (سعف) is a full-stack mobile application developed for the agricultural sector, specifically targeting palm tree farmers. It leverages Artificial Intelligence to identify palm tree varieties from images and provides a community platform for farmers to share insights and classification results.
+## ✅ Quick start (recommended): Docker
+This runs **PostgreSQL + Django backend** with one command.
+
+### Prerequisites
+- Docker Desktop
+
+### Run
+From the `Saaf/` folder:
+
+```bash
+docker compose up --build
+```
+
+- **Backend URL**: `http://127.0.0.1:8000/`
+- **API base**: `http://127.0.0.1:8000/api/`
+
+### Model file
+The model checkpoint is already in `Saaf/` and is mounted into the backend container automatically.
 
 ## 🏗 Project Architecture
 
@@ -47,59 +65,65 @@ A robust backend managing users, posts, and ML inference.
 
 ---
 
-## ⚙️ Technical Deep Dive
-
-### AI Classification Logic
-The model uses a pre-trained `TIMM` architecture. To prevent misleading results, the API returns a classification "Unknown" if the model's confidence is below 95%. When a result is "Unknown", the option to "Share to Community" is automatically disabled in the app.
-
-### Data Synchronization
-The app uses a "Reload on Tab" strategy. To ensure that likes and comments made in the community feed are visible in the user's profile, the profile posts are re-fetched whenever the user navigates to the Profile tab.
-
----
-
 ## 🛠 Setup and Installation
 
-### 1. Main Backend (Django)
-Runs the core application, database, and social features.
-1. **Database**: Ensure PostgreSQL is running.
-   ```bash
-   createdb saaf_db
-   ```
-2. **Environment**: Create a `.env` in `saaf_backend/`:
-   ```env
-   SECRET_KEY=your_secret
-   DATABASE_URL=postgres://user:pass@localhost:5432/saaf_db
-   ```
-3. **Run**:
-   ```bash
-   cd saaf_backend
-   pip install -r requirements.txt
-   python manage.py migrate
-   python manage.py runserver
-   ```
+### Option A: Docker (best for teammates)
+See the **Quick start** section above.
 
-### 2. AI Inference Engine (FastAPI)
-Runs the local PyTorch palm classification model.
-1. **Model checkpoint**: Ensure your `.pth` model file is correctly referenced in `saaf_backend/main.py` (line 18).
-2. **Run**:
-   ```bash
-   cd saaf_backend
-   pip install fastapi uvicorn torch torchvision pillow timm
-   uvicorn main:app --reload --port 8000
-   ```
-*(Note: Ensure your Django backend is running on `port 8080` or adjust Flutter API constants accordingly if running both locally).*
+### Option B: Local (no Docker)
+Use this if you want to run everything directly on your machine.
 
-### 3. Frontend (Flutter)
-1. **Install Dependencies**:
-   ```bash
-   flutter pub get
-   ```
-2. **Run the App**:
-   ```bash
-   flutter run
-   ```
+#### 1) Backend (Django)
+**Prerequisites**
+- Python 3.11+
+- PostgreSQL 16+
+
+**Create `saaf_backend/.env`**
+> Note: backend settings use `DB_*` variables (not `DATABASE_URL`).
+
+```env
+SECRET_KEY=your_secret
+DEBUG=True
+DB_NAME=saaf_db
+DB_USER=postgres
+DB_PASSWORD=your_postgres_password
+DB_HOST=localhost
+DB_PORT=5432
+MODEL_PATH=../convnext_tiny_best_on_val_no_kfold_aug_convnext_tiny.pth
+```
+
+**Run**
+```bash
+cd saaf_backend
+pip install -r requirements.txt
+python manage.py migrate
+python manage.py runserver
+```
+
+Backend will be at `http://127.0.0.1:8000/`.
+
+#### 2) Frontend (Flutter)
+**Prerequisites**
+- Flutter SDK
+
+From the `Saaf/` folder:
+```bash
+flutter pub get
+flutter run
+```
+
+**Flutter Web (Edge/Chrome) API URL**
+- When testing on the same laptop in a browser, set:
+  - `lib/core/constants/api_constants.dart` → `baseUrl = 'http://127.0.0.1:8000/api'`
 
 ---
+## ⚙️ Technical notes
+
+### AI classification logic
+The model uses a pre-trained `timm` architecture. To prevent misleading results, the API returns `"Unknown"` if confidence is below 95%. When result is `"Unknown"`, the option to “Share to Community” is disabled in the app.
+
+### Data synchronization
+The app uses a “Reload on Tab” strategy. Profile posts are re-fetched whenever the user navigates to the Profile tab so likes/comments stay in sync.
 
 ## 📤 Git Workflow
 

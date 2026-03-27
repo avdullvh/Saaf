@@ -15,7 +15,7 @@ CLASS_NAMES = {
 }
 
 # The absolute path to your `.pth` model file
-MODEL_PATH = "/Users/abdullah/Downloads/MarginOfError/convnext_tiny_best_on_val_no_kfold_aug_convnext_tiny.pth"
+MODEL_PATH = "C:\Users\faris\Desktop\graduation project\SaafAPP\Saaf\convnext_tiny_best_on_val_no_kfold_aug_convnext_tiny.pth"
 
 app = FastAPI(title="Palm Classification API")
 

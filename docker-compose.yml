@@ -1,0 +1,35 @@
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: saaf_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: saaf_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - saaf_postgres_data:/var/lib/postgresql/data
+
+  backend:
+    build:
+      context: ./saaf_backend
+    environment:
+      SECRET_KEY: dev-secret-key
+      DEBUG: "True"
+      DB_NAME: saaf_db
+      DB_USER: postgres
+      DB_PASSWORD: saaf_password
+      DB_HOST: db
+      DB_PORT: "5432"
+      MODEL_PATH: /models/convnext.pth
+    volumes:
+      - ./saaf_backend:/app
+      - ./convnext_tiny_best_on_val_no_kfold_aug_convnext_tiny.pth:/models/convnext.pth:ro
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+
+volumes:
+  saaf_postgres_data:
+
