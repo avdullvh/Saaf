@@ -8,7 +8,7 @@ from rest_framework.response import Response
 
 from .models import Follow, User
 from .serializers import RegisterSerializer, LoginSerializer, UserSerializer, get_tokens
-from .recommendations import adamic_adar_recommendations
+from .recommendations import get_ml_recommendations, train_recommender
 
 
 @api_view(['POST'])
@@ -139,9 +139,34 @@ def following_list(request, user_id):
 @permission_classes([IsAuthenticated])
 def recommendations(request):
     """
-    Returns a list of recommended users to follow based on the Adamic-Adar Index.
-    Excludes users the requesting user is already following, and the user themselves.
+    Returns a list of recommended users to follow using the LightGCN ML model.
+
+    The model is trained on the social follow-graph and ranks candidates by
+    learned dot-product similarity.  Temperature-based sampling is applied so
+    the list varies on each refresh while still favouring relevant users.
+
+    Falls back to random suggestions for new (cold-start) users.
     """
-    recommended_users = adamic_adar_recommendations(request.user, limit=10)
+    recommended_users = get_ml_recommendations(request.user, limit=10)
     serializer = UserSerializer(recommended_users, many=True, context={'request': request})
     return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def retrain_recommender(request):
+    """
+    Manually trigger a LightGCN model retrain without restarting the server.
+    Useful after significant new data (users / follows) has been added.
+
+    Staff-only endpoint.
+    """
+    if not request.user.is_staff:
+        return Response({'detail': 'Staff access required.'}, status=status.HTTP_403_FORBIDDEN)
+
+    import threading
+    thread = threading.Thread(
+        target=train_recommender, daemon=True, name='LightGCN-manual-retrain'
+    )
+    thread.start()
+    return Response({'status': 'retraining started'}, status=status.HTTP_202_ACCEPTED)

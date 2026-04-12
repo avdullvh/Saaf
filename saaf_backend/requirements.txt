@@ -8,5 +8,5 @@ Pillow
 torch
 torchvision
 timm
+numpy
 requests
-
