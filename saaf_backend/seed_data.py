@@ -5,8 +5,10 @@ Run from project root: python saaf_backend/seed_data.py
 
 import os
 import sys
+import time
 import random
 import shutil
+import requests
 from pathlib import Path
 
 # ── Django setup ──────────────────────────────────────────────────────────────
@@ -50,51 +52,36 @@ BIOS = [
     "مهتم بالحفاظ على أصناف النخيل النادرة.",
 ]
 
-DISEASE_TYPES = [
-    "Healthy",
-    "Bayoud Disease",
-    "White Scale",
-    "Black Scorch",
-    "Inflorescence Rot",
-]
+HF_CLASSIFY_URL = "https://mutairi1-palmtreeclassifer.hf.space/classify-tree"
+HF_TIMEOUT = 60
 
 CAPTIONS = {
-    "Healthy": [
-        "الحمد لله نخيلي بصحة ممتازة هذا الموسم 💚 الثمار طالعة حلوة وكبيرة.",
-        "شفت النخلة اليوم وهي بأحسن حال 🌴 ربنا يديم النعمة.",
-        "نخلتي الصغيرة كبرت وصارت تعطي أجمل الثمار، سبحان الله 🌴💚",
-        "نخيل المزرعة كلها بخير والحمد لله، الخضرة في كل مكان 🌿",
-        "نتايج التحليل ممتازة، النخلة صحتها مية بالمية 💯",
-        "الموسم هذا أحسن موسم، النخيل ما شاء الله زاهية ومعطية 🌴",
-        "اطمنوا على نخيلنا، كلها بصحة وعافية والحمد لله 🙏",
+    "Shishi": [
+        "زرعت هذي الشيشي من سنتين والحمد لله طلعت زينة 🌴❤️ ربي يحفظها",
+        "نخلة الشيشي هذي ورثتها من جدي، ما شاء الله عليها كل موسم تعطي أحسن 🌴",
+        "الشيشي في مزرعتنا هذا العام حالتها ممتازة، الجهاز أكد إنها شيشي بنسبة عالية 💚",
+        "أول ما زرعت الشيشي ما توقعت تطلع جذابة كذا 🌴✨ سبحان الله",
+        "نخلتي الشيشي شكلها بهي وصحتها تمام، الحمد لله على النعمة 🙏🌴",
+        "الشيشي من أجمل أصناف النخيل عندنا في المزرعة، ما أحلى شكلها 🌴❤️",
+        "رفعت صورة الشيشي على التطبيق وطلع التشخيص صحيح، ما شاء الله على الدقة 💯",
     ],
-    "Bayoud Disease": [
-        "نخلتي هذي بدت تظهر عليها علامات مرض البيوض، نسبة الإصابة عالية. أرجو المساعدة 🌴",
-        "لاحظت اصفرار في السعف وذبول في الأوراق، خايف يكون بيوض. وش تنصحوني؟",
-        "مرض البيوض وصل للمزرعة 😢 فقدت ثلاث نخلات الأسبوع الماضي.",
-        "السعف صار يتساقط وألوانه تغيرت، الجهاز شخّص مرض البيوض بنسبة عالية.",
-        "يا ليت أحد يساعدني، النخلة هذي مريضة ومحتاجة علاج عاجل من مرض البيوض.",
+    "Razeez": [
+        "نخلتي الرزيز هذا الموسم ما شاء الله عليها، الطلع كثير وصحتها ممتازة 🌿",
+        "الرزيز من أقوى الأصناف عندي، دايماً تتحمل الحر وما تشكي 🌴💪",
+        "شفت اليوم نخلة الرزيز وقلبي انبسط، ما شاء الله طولها وكثافة سعفها 🌴",
+        "الرزيز هذا الصنف ما يخذلك، كل سنة أحسن من اللي قبلها والحمد لله ✨",
+        "نخلة الرزيز في المزرعة صارت رمز للعيلة، نفتخر فيها 🌴❤️",
+        "التطبيق شخّص الرزيز بنسبة عالية، وهذا صح لأني أعرفها من صغري 😄🌴",
+        "الرزيز أحسن استثمار في المزرعة، ثمارها حلوة وتاجرها في السوق 🌴💚",
     ],
-    "White Scale": [
-        "ظهرت على جريد النخلة بقع بيضاء صغيرة، الجهاز قال حشرة القشرة البيضاء 😟",
-        "الحشرات البيضاء غطّت السعف، اضطريت أعزل النخلة عن باقي المزرعة.",
-        "القشرة البيضاء منتشرة على جذع النخلة، وش أفضل علاج؟",
-        "لاحظت إفراز أبيض لزج على الأوراق، يبدو إنه إصابة بحشرة القشرة البيضاء.",
-        "النخلة تعبانة من القشرة البيضاء، نسبة الإصابة متوسطة والحمد لله.",
-    ],
-    "Black Scorch": [
-        "أطراف السعف اسودّت فجأة، الجهاز كشف الحرق الأسود بنسبة عالية 😰",
-        "الحرق الأسود أتلف جزء كبير من النخلة، أتمنى أنقذها قبل فوات الأوان.",
-        "لاحظت تحول لون الجمار إلى الأسود، وهذا مؤشر خطر للحرق الأسود.",
-        "النخلة هذي أصابها الحرق الأسود بشكل واضح، نحتاج تدخل سريع.",
-        "الحرق الأسود بدأ من قمة النخلة وينتشر للأسفل، الوضع خطير.",
-    ],
-    "Inflorescence Rot": [
-        "الطلع خرج هذا الموسم لكن الجهاز كشف تعفن في النورة الزهرية 😟",
-        "تعفن النورة الزهرية أثّر على محصول هذا العام بشكل كبير.",
-        "لاحظت رطوبة زايدة في منطقة الطلع وبدأ يتعفن، نسبة الإصابة متوسطة.",
-        "النورة الزهرية تعفنت قبل الإخصاب، خسرنا إنتاج هذه النخلة.",
-        "تعفن الطلع مشكلة منتشرة هذا الموسم بسبب الرطوبة العالية.",
+    "Khalas": [
+        "من أحسن ما عندي في المزرعة هذي الخلاص، تمرها حلو وغلتها وفيرة الحمد لله 🌴✨",
+        "الخلاص ملكة النخيل، ما في صنف يقارنها بحلاوة التمر 🌴❤️",
+        "نخلة الخلاص هذا الموسم أعطت أكثر من اللي توقعت، الله يبارك 🙏🌴",
+        "اشتريت شتلة الخلاص قبل عشر سنين وهالحين صارت من أجمل النخيل في المزرعة 💚",
+        "التطبيق عرّف الخلاص من الصورة مباشرة، دقته عالية 💯🌴",
+        "الخلاص تمرها ما يشبع منه، حلاوة ما توصف 😋🌴✨",
+        "فخور بنخلة الخلاص هذي، ورثتها عن والدي رحمه الله 🌴🙏",
     ],
 }
 
@@ -126,8 +113,39 @@ def make_email(name: str, idx: int) -> str:
     return f"{latin.lower()}{idx}@{random.choice(domains)}"
 
 
-def pick_caption(disease: str) -> str:
-    return random.choice(CAPTIONS[disease])
+def classify_image(photo: Path) -> dict | None:
+    """Call the HF API and return {predicted_type, confidence_score}, or None on failure."""
+    try:
+        with open(photo, "rb") as f:
+            res = requests.post(
+                HF_CLASSIFY_URL,
+                headers={"accept": "application/json"},
+                files={"file": (photo.name, f, "image/jpeg")},
+                timeout=HF_TIMEOUT,
+            )
+        if res.status_code >= 400:
+            print(f"  WARNING: API error {res.status_code} for {photo.name} — skipping")
+            return None
+        payload = res.json()
+        predicted = str(payload.get("predicted_type") or payload.get("prediction") or "")
+        confidence = float(payload.get("confidence_score") or payload.get("confidence") or 0.0)
+        if not predicted:
+            print(f"  WARNING: empty prediction for {photo.name} — skipping")
+            return None
+        return {"predicted_type": predicted, "confidence_score": round(confidence, 4)}
+    except requests.Timeout:
+        print(f"  WARNING: timeout for {photo.name} — skipping")
+        return None
+    except Exception as e:
+        print(f"  WARNING: {photo.name} failed ({e}) — skipping")
+        return None
+
+
+def pick_caption(predicted_type: str) -> str:
+    pool = CAPTIONS.get(predicted_type)
+    if not pool:
+        pool = [f"نخلة جميلة من مزرعتنا 🌴 نوعها {predicted_type}"]
+    return random.choice(pool)
 
 
 def copy_image_to_media(src: Path, media_posts: Path) -> str:
@@ -184,25 +202,36 @@ def run():
 
     for user in created_users:
         num_posts = random.randint(2, 5)
-        for _ in range(num_posts):
-            disease = random.choice(DISEASE_TYPES)
-            confidence = round(random.uniform(0.75, 0.99), 4)
-            caption = pick_caption(disease)
+        user_post_count = 0
 
+        for _ in range(num_posts):
             photo = photo_cycle[photo_index % len(photo_cycle)]
             photo_index += 1
+
+            print(f"    Classifying {photo.name} ...", end=" ", flush=True)
+            result = classify_image(photo)
+            time.sleep(1)
+
+            if result is None:
+                continue
+
+            predicted_type = result["predicted_type"]
+            confidence_score = result["confidence_score"]
+            caption = pick_caption(predicted_type)
             rel_path = copy_image_to_media(photo, media_posts_dir)
 
             post = Post.objects.create(
                 author=user,
                 caption=caption,
                 image=rel_path,
-                predicted_type=disease,
-                confidence_score=confidence,
+                predicted_type=predicted_type,
+                confidence_score=confidence_score,
             )
             all_posts.append(post)
+            user_post_count += 1
+            print(f"→ {predicted_type} ({confidence_score})")
 
-        print(f"  {user.full_name}: {num_posts} posts")
+        print(f"  {user.full_name}: {user_post_count} posts")
 
     print(f"  Total posts created: {len(all_posts)}")
 
