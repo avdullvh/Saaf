@@ -8,7 +8,7 @@ from rest_framework.response import Response
 
 HF_CLASSIFY_URL = os.environ.get(
     "HF_CLASSIFY_URL",
-    "https://mutairi1-palmtreeclassifer.hf.space/classify-tree",
+    "https://mutairi1-palmtreeclassifer.hf.space/classify",
 )
 HF_TIMEOUT_SECONDS = int(os.environ.get("HF_TIMEOUT_SECONDS", "60"))
 
@@ -39,7 +39,7 @@ def _normalize_hf_response(payload: dict) -> dict:
         confidence = 0.0
 
     return {
-        "predicted_type": str(predicted),
+        "predicted_type": str(predicted).title(),
         "confidence_score": round(confidence, 4),
     }
 
