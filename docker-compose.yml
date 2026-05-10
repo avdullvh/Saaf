@@ -21,10 +21,9 @@ services:
       DB_PASSWORD: saaf_password
       DB_HOST: db
       DB_PORT: "5432"
-      MODEL_PATH: /models/convnext.pth
+      HF_CLASSIFY_URL: "https://mutairi1-palmtreeclassifer.hf.space/classify"
     volumes:
       - ./saaf_backend:/app
-      - ./convnext_tiny_best_on_val_no_kfold_aug_convnext_tiny.pth:/models/convnext.pth:ro
     ports:
       - "8000:8000"
     depends_on:
