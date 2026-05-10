@@ -1,4 +1,6 @@
 # accounts/serializers.py
+import re
+
 from rest_framework import serializers
 from rest_framework_simplejwt.tokens import RefreshToken
 from .models import User
@@ -42,6 +44,13 @@ class RegisterSerializer(serializers.ModelSerializer):
     class Meta:
         model  = User
         fields = ['email', 'full_name', 'password']
+
+    def validate_password(self, value):
+        if not re.search(r'[A-Za-z]', value) or not re.search(r'\d', value):
+            raise serializers.ValidationError(
+                'Password must be at least 6 characters and contain letters and numbers.'
+            )
+        return value
 
     def create(self, validated_data):
         return User.objects.create_user(**validated_data)

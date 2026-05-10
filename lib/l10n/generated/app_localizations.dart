@@ -476,6 +476,36 @@ abstract class AppLocalizations {
   /// **'Could not load image.'**
   String get errorImagePick;
 
+  /// No description provided for @passwordRequirements.
+  ///
+  /// In en, this message translates to:
+  /// **'Password must be at least 6 characters and contain letters and numbers.'**
+  String get passwordRequirements;
+
+  /// No description provided for @fullNameRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter your full name.'**
+  String get fullNameRequired;
+
+  /// No description provided for @emailInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter a valid email address.'**
+  String get emailInvalid;
+
+  /// No description provided for @passwordsDoNotMatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Passwords do not match.'**
+  String get passwordsDoNotMatch;
+
+  /// No description provided for @passwordRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter your password.'**
+  String get passwordRequired;
+
   /// No description provided for @successPost.
   ///
   /// In en, this message translates to:

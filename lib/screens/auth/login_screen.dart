@@ -170,7 +170,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                               validator: (v) =>
                                   (v == null || !v.contains('@'))
-                                      ? l10n.email
+                                      ? l10n.emailInvalid
                                       : null,
                             ),
 
@@ -192,8 +192,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                 ),
                               ),
                               validator: (v) =>
-                                  (v == null || v.length < 6)
-                                      ? l10n.password
+                                  (v == null || v.isEmpty)
+                                      ? l10n.passwordRequired
                                       : null,
                             ),
 

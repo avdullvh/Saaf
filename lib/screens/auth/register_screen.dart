@@ -140,7 +140,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               ),
                               validator: (v) =>
                                   (v == null || v.trim().isEmpty)
-                                      ? l10n.fullName
+                                      ? l10n.fullNameRequired
                                       : null,
                             ),
 
@@ -156,7 +156,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               ),
                               validator: (v) =>
                                   (v == null || !v.contains('@'))
-                                      ? l10n.email
+                                      ? l10n.emailInvalid
                                       : null,
                             ),
 
@@ -177,10 +177,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                       setState(() => _obscure = !_obscure),
                                 ),
                               ),
-                              validator: (v) =>
-                                  (v == null || v.length < 6)
-                                      ? l10n.password
-                                      : null,
+                              validator: (v) {
+                                if (v == null || v.length < 6) {
+                                  return l10n.passwordRequirements;
+                                }
+                                final hasLetter =
+                                    RegExp(r'[A-Za-z]').hasMatch(v);
+                                final hasNumber = RegExp(r'\d').hasMatch(v);
+                                if (!hasLetter || !hasNumber) {
+                                  return l10n.passwordRequirements;
+                                }
+                                return null;
+                              },
                             ),
 
                             const SizedBox(height: 16),
@@ -195,7 +203,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               ),
                               validator: (v) =>
                                   v != _passCtrl.text
-                                      ? l10n.confirmPassword
+                                      ? l10n.passwordsDoNotMatch
                                       : null,
                             ),
 

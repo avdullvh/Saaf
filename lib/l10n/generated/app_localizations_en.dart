@@ -203,6 +203,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get errorImagePick => 'Could not load image.';
 
   @override
+  String get passwordRequirements =>
+      'Password must be at least 6 characters and contain letters and numbers.';
+
+  @override
+  String get fullNameRequired => 'Please enter your full name.';
+
+  @override
+  String get emailInvalid => 'Please enter a valid email address.';
+
+  @override
+  String get passwordsDoNotMatch => 'Passwords do not match.';
+
+  @override
+  String get passwordRequired => 'Please enter your password.';
+
+  @override
   String get successPost => 'Posted to feed successfully!';
 
   @override

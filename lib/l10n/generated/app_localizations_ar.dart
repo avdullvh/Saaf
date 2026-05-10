@@ -203,6 +203,22 @@ class AppLocalizationsAr extends AppLocalizations {
   String get errorImagePick => 'تعذّر تحميل الصورة.';
 
   @override
+  String get passwordRequirements =>
+      'يجب أن تتكون كلمة المرور من 6 خانات على الأقل وتحتوي على حروف وأرقام.';
+
+  @override
+  String get fullNameRequired => 'يرجى إدخال الاسم الكامل.';
+
+  @override
+  String get emailInvalid => 'يرجى إدخال بريد إلكتروني صحيح.';
+
+  @override
+  String get passwordsDoNotMatch => 'كلمتا المرور غير متطابقتين.';
+
+  @override
+  String get passwordRequired => 'يرجى إدخال كلمة المرور.';
+
+  @override
   String get successPost => 'تم النشر في المجتمع بنجاح!';
 
   @override

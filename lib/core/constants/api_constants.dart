@@ -6,7 +6,7 @@ class ApiConstants {
   //home 192.168.0.130
   //faris 172.20.10.2
   //hamza 10.51.166.156
-  static const String baseUrl = 'http://192.168.0.130:8000/api';
+  static const String baseUrl = 'http://127.0.0.1:8000/api';
 
   // Auth
   static const String login    = '$baseUrl/auth/login/';
