@@ -118,40 +118,133 @@ static const String baseUrl = 'http://127.0.0.1:8000/api';
 
 ---
 
-#### 3) Running on a Physical Device (iPhone or Android)
+#### 3) Running on a Physical Android Device
 
-When testing on a real phone, the app must reach the Django backend over your local network.
+**Step 1 — Enable Developer Options on the phone**
+1. Go to **Settings → About phone**.
+2. Tap **Build number** 7 times until you see "You are now a developer".
+3. Go back to **Settings → Developer Options**.
+4. Enable **USB Debugging**.
 
-**Step 1 — Find your machine's local IP address**
+**Step 2 — Connect the phone**
 
-- **Windows**: open Command Prompt → `ipconfig` → look for `IPv4 Address` (e.g. `192.168.1.10`)
-- **macOS**: open Terminal → `ifconfig en0` → look for `inet` (e.g. `192.168.1.10`)
+Connect via USB. When prompted on the phone, tap **Allow USB Debugging**.
 
-**Step 2 — Update the API base URL**
+Verify the device is detected:
+```bash
+flutter devices
+```
 
-Open `lib/core/constants/api_constants.dart` and replace the IP with yours:
+**Step 3 — Find your machine's local IP**
+
+- **Windows**: open Command Prompt → run `ipconfig` → look for **IPv4 Address** (e.g. `192.168.1.10`)
+- **macOS**: open Terminal → run `ifconfig en0` → look for **inet** (e.g. `192.168.1.10`)
+
+**Step 4 — Update the API base URL**
+
+Open `lib/core/constants/api_constants.dart` and set your machine's IP:
 
 ```dart
 static const String baseUrl = 'http://192.168.1.10:8000/api';
 ```
 
-**Step 3 — Run Django on your LAN**
+> Make sure your phone and your computer are on the **same Wi-Fi network**.
+
+**Step 5 — Run Django on your LAN**
 ```bash
 python manage.py runserver 0.0.0.0:8000
 ```
 
-**Step 4 — Run the Flutter app on the device**
-
-Connect the phone via USB (or wirelessly) and run:
+**Step 6 — Run the app**
 ```bash
 flutter run
 ```
 
-Flutter will detect the connected device. The app will communicate with your machine's Django server over Wi-Fi.
+---
 
-> **iPhone note**: You may need to trust the developer certificate on the device under Settings → General → VPN & Device Management.
+#### 4) Running on a Physical iPhone (via Xcode)
 
-> **Android note**: Enable Developer Options and USB Debugging on the device.
+> **Requirements**: macOS machine, Xcode installed, Apple Developer account (free account is enough for personal testing).
+
+**Step 1 — Install Xcode**
+
+Download **Xcode** from the Mac App Store. After installing, open it once to accept the license and install components.
+
+Also install the Xcode command-line tools:
+```bash
+sudo xcode-select --install
+```
+
+**Step 2 — Install CocoaPods**
+```bash
+sudo gem install cocoapods
+```
+
+**Step 3 — Install Flutter dependencies**
+
+From the `Saaf/` folder:
+```bash
+flutter pub get
+cd ios
+pod install
+cd ..
+```
+
+**Step 4 — Open the project in Xcode**
+```bash
+open ios/Runner.xcworkspace
+```
+
+> Always open the `.xcworkspace` file, **not** `.xcodeproj`.
+
+**Step 5 — Set your Apple Developer Team**
+
+1. In Xcode, click on **Runner** in the left sidebar.
+2. Go to the **Signing & Capabilities** tab.
+3. Under **Team**, select your Apple ID (sign in via Xcode → Settings → Accounts if needed).
+4. Xcode will automatically manage the signing certificate.
+
+**Step 6 — Enable Developer Mode and trust the certificate on the iPhone**
+
+1. Connect your iPhone via USB.
+2. Enable Developer Mode: go to **Settings → Privacy & Security → Developer Mode**, toggle it on, then restart the phone when prompted.
+3. After restart, go to **Settings → General → VPN & Device Management**.
+4. Find your Apple ID under "Developer App" and tap **Trust**.
+
+**Step 7 — Find your machine's local IP**
+
+Open Terminal:
+```bash
+ifconfig en0
+```
+Look for the `inet` line (e.g. `192.168.1.10`).
+
+**Step 8 — Update the API base URL**
+
+Open `lib/core/constants/api_constants.dart`:
+```dart
+static const String baseUrl = 'http://192.168.1.10:8000/api';
+```
+
+> Make sure your iPhone and your Mac are on the **same Wi-Fi network**.
+
+**Step 9 — Run Django on your LAN**
+```bash
+python manage.py runserver 0.0.0.0:8000
+```
+
+**Step 10 — Build and run from Xcode**
+
+1. In Xcode, select your iPhone from the device dropdown at the top.
+2. Press the **▶ Run** button (or `Cmd + R`).
+3. Xcode will build and install the app on your iPhone.
+
+Alternatively, from the terminal:
+```bash
+flutter run
+```
+
+Flutter will automatically detect the connected iPhone.
 
 ---
 
